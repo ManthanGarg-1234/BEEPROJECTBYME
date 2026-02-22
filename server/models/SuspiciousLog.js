@@ -9,7 +9,7 @@ const suspiciousLogSchema = new mongoose.Schema({
     session: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Session',
-        required: true
+        default: null
     },
     reason: {
         type: String,
@@ -21,7 +21,8 @@ const suspiciousLogSchema = new mongoose.Schema({
             'DUPLICATE_DEVICE',
             'DUPLICATE_ATTENDANCE',
             'SESSION_EXPIRED',
-            'LATE_REJECTED'
+            'LATE_REJECTED',
+            'WINDOW_CLOSED'
         ]
     },
     deviceId: {

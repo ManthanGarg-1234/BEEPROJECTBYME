@@ -188,7 +188,7 @@ router.post('/:id/bulk-enroll', auth, authorize('teacher'), async (req, res) => 
                 }
 
                 // Add to class if not already enrolled
-                if (!classDoc.students.includes(user._id)) {
+                if (!classDoc.students.some(id => id.equals(user._id))) {
                     classDoc.students.push(user._id);
                     results.enrolled.push({ name: user.name, rollNumber: user.rollNumber });
                 }

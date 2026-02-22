@@ -237,7 +237,7 @@ router.get('/manual/:sessionId', auth, authorize('teacher'), async (req, res) =>
         studentList.sort((a, b) => a.rollNumber.localeCompare(b.rollNumber));
 
         res.json({
-            session: { _id: session._id, classId: session.classId, subject: cls.subject, startTime: session.startTime, isActive: session.isActive },
+            session: { _id: session._id, classId: cls.classId, subject: cls.subject, startTime: session.startTime, isActive: session.isActive },
             students: studentList
         });
     } catch (error) {

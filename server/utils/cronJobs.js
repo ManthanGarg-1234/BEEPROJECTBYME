@@ -39,9 +39,10 @@ const initCronJobs = () => {
         try {
             const Session = require('../models/Session');
             const now = new Date();
+            const gracePeriod = 2 * 60 * 60 * 1000; // 2 hours after attendance window
             const expired = await Session.updateMany(
-                { isActive: true, endTime: { $lte: now } },
-                { isActive: false }
+                { isActive: true, attendanceWindowEnd: { $lte: new Date(now.getTime() - gracePeriod) } },
+                { isActive: false, endTime: now }
             );
             if (expired.modifiedCount > 0) {
                 console.log(`[CRON] Auto-terminated ${expired.modifiedCount} expired session(s)`);
