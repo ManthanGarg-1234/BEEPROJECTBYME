@@ -10,10 +10,30 @@ const { initCronJobs } = require('./utils/cronJobs');
 const app = express();
 const server = http.createServer(app);
 
+const normalizeOrigin = (origin) => (origin || '').replace(/\/+$/, '');
+const clientOrigin = normalizeOrigin(process.env.CLIENT_URL) || 'http://localhost:5173';
+const allowedOrigins = new Set([
+    clientOrigin,
+    'http://localhost:5173'
+].map(normalizeOrigin));
+
+const isOriginAllowed = (origin) => {
+    if (!origin) {
+        return true;
+    }
+    return allowedOrigins.has(normalizeOrigin(origin));
+};
+
 // Socket.io setup
 const io = new Server(server, {
     cors: {
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        origin: (origin, callback) => {
+            if (isOriginAllowed(origin)) {
+                callback(null, origin);
+                return;
+            }
+            callback(new Error('CORS origin not allowed'));
+        },
         methods: ['GET', 'POST'],
         credentials: true
     }
@@ -27,7 +47,13 @@ initSocketHandler(io);
 
 // Middleware
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        if (isOriginAllowed(origin)) {
+            callback(null, origin);
+            return;
+        }
+        callback(new Error('CORS origin not allowed'));
+    },
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
