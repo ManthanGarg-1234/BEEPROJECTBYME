@@ -102,42 +102,77 @@ const TeacherDashboard = () => {
     if (classes.length === 0) {
         return (
             <div className="page-container">
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1">
-                    <div className="bg-white dark:bg-dark-800 rounded-[22px] p-12 text-center relative overflow-hidden">
-                        {/* Decorative circles */}
-                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-purple-200 to-pink-200 dark:from-purple-900/30 dark:to-pink-900/30 rounded-full blur-2xl"></div>
-                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-blue-200 to-indigo-200 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full blur-2xl"></div>
-
-                        {/* SVG Illustration */}
-                        <div className="relative mx-auto w-48 h-48 mb-6">
-                            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="animate-float">
-                                <circle cx="100" cy="100" r="80" fill="url(#emptyGrad)" opacity="0.1" />
-                                <rect x="60" y="50" width="80" height="100" rx="8" fill="url(#emptyGrad)" opacity="0.2" />
-                                <rect x="70" y="65" width="45" height="4" rx="2" fill="#818cf8" />
-                                <rect x="70" y="75" width="35" height="4" rx="2" fill="#a78bfa" />
-                                <rect x="70" y="85" width="50" height="4" rx="2" fill="#818cf8" />
-                                <rect x="70" y="100" width="20" height="20" rx="4" fill="#c084fc" opacity="0.3" />
-                                <path d="M76 110L80 114L88 106" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <rect x="95" y="100" width="20" height="20" rx="4" fill="#818cf8" opacity="0.3" />
-                                <rect x="70" y="125" width="55" height="4" rx="2" fill="#a78bfa" opacity="0.5" />
-                                <circle cx="155" cy="55" r="15" fill="#fbbf24" opacity="0.8" />
-                                <path d="M150 55L154 59L160 51" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                                <defs>
-                                    <linearGradient id="emptyGrad" x1="0" y1="0" x2="200" y2="200">
-                                        <stop stopColor="#667eea" />
-                                        <stop offset="1" stopColor="#a855f7" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
+                <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+                    <aside className="glass-card-solid p-5 h-fit lg:sticky lg:top-24">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-r from-cyan-500 to-lime-400 flex items-center justify-center text-white text-lg shadow-lg shadow-cyan-500/30">
+                                🧭
+                            </div>
+                            <div>
+                                <p className="text-xs uppercase tracking-[0.25em] text-cyan-200/80">Control Hub</p>
+                                <h2 className="text-lg font-bold text-white">Teacher Sidebar</h2>
+                            </div>
                         </div>
 
-                        <h2 className="text-2xl font-bold mb-2 dark:text-white relative">No Classes Yet</h2>
-                        <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-sm mx-auto relative">
-                            Create your first class to start tracking attendance and generate beautiful reports
-                        </p>
-                        <button onClick={() => navigate('/teacher/classes')} className="relative bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 active:scale-95">
-                            ✨ Create Your First Class
-                        </button>
+                        <div className="space-y-3 mb-6">
+                            {quickNav.map((item) => (
+                                <button
+                                    key={item.path}
+                                    type="button"
+                                    onClick={() => navigate(item.path)}
+                                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white transition-all duration-300"
+                                >
+                                    <span className="flex items-center gap-2 text-sm font-medium">
+                                        <span className="text-lg">{item.icon}</span>
+                                        {item.label}
+                                    </span>
+                                    <span className="text-xs text-slate-400">→</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-4 text-sm text-slate-300">
+                            Add your first class to unlock analytics, sessions, and reports.
+                        </div>
+                    </aside>
+
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1">
+                        <div className="bg-white dark:bg-dark-800 rounded-[22px] p-12 text-center relative overflow-hidden">
+                            {/* Decorative circles */}
+                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-purple-200 to-pink-200 dark:from-purple-900/30 dark:to-pink-900/30 rounded-full blur-2xl"></div>
+                            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-blue-200 to-indigo-200 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full blur-2xl"></div>
+
+                            {/* SVG Illustration */}
+                            <div className="relative mx-auto w-48 h-48 mb-6">
+                                <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="animate-float">
+                                    <circle cx="100" cy="100" r="80" fill="url(#emptyGrad)" opacity="0.1" />
+                                    <rect x="60" y="50" width="80" height="100" rx="8" fill="url(#emptyGrad)" opacity="0.2" />
+                                    <rect x="70" y="65" width="45" height="4" rx="2" fill="#818cf8" />
+                                    <rect x="70" y="75" width="35" height="4" rx="2" fill="#a78bfa" />
+                                    <rect x="70" y="85" width="50" height="4" rx="2" fill="#818cf8" />
+                                    <rect x="70" y="100" width="20" height="20" rx="4" fill="#c084fc" opacity="0.3" />
+                                    <path d="M76 110L80 114L88 106" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    <rect x="95" y="100" width="20" height="20" rx="4" fill="#818cf8" opacity="0.3" />
+                                    <rect x="70" y="125" width="55" height="4" rx="2" fill="#a78bfa" opacity="0.5" />
+                                    <circle cx="155" cy="55" r="15" fill="#fbbf24" opacity="0.8" />
+                                    <path d="M150 55L154 59L160 51" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                                    <defs>
+                                        <linearGradient id="emptyGrad" x1="0" y1="0" x2="200" y2="200">
+                                            <stop stopColor="#667eea" />
+                                            <stop offset="1" stopColor="#a855f7" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                            </div>
+
+                            <h2 className="text-2xl font-bold mb-2 dark:text-white relative">No Classes Yet</h2>
+                            <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-sm mx-auto relative">
+                                Create your first class to start tracking attendance and generate beautiful reports
+                            </p>
+                            <button onClick={() => navigate('/teacher/classes')} className="relative bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 active:scale-95">
+                                ✨ Create Your First Class
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

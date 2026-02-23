@@ -54,31 +54,49 @@ const StudentDashboard = () => {
     if (!data || data.classes.length === 0) {
         return (
             <div className="page-container">
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-500 p-[1px]">
-                    <div className="bg-white dark:bg-dark-800 rounded-[22px] p-12 text-center relative overflow-hidden">
-                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-cyan-200 to-blue-200 dark:from-cyan-900/30 dark:to-blue-900/30 rounded-full blur-2xl"></div>
-                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-indigo-200 to-purple-200 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-full blur-2xl"></div>
-
-                        <div className="relative mx-auto w-40 h-40 mb-6">
-                            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="animate-float">
-                                <circle cx="100" cy="100" r="80" fill="url(#stuGrad)" opacity="0.08" />
-                                <rect x="55" y="60" width="90" height="80" rx="12" fill="url(#stuGrad)" opacity="0.15" />
-                                <circle cx="100" cy="85" r="15" fill="#60a5fa" opacity="0.4" />
-                                <path d="M80 115c0-11 9-20 20-20s20 9 20 20" stroke="#3b82f6" strokeWidth="3" fill="none" strokeLinecap="round" />
-                                <circle cx="150" cy="55" r="12" fill="#fbbf24" opacity="0.8" />
-                                <path d="M146 55l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                                <defs>
-                                    <linearGradient id="stuGrad" x1="0" y1="0" x2="200" y2="200">
-                                        <stop stopColor="#06b6d4" />
-                                        <stop offset="1" stopColor="#6366f1" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
+                <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+                    <aside className="glass-card-solid p-5 h-fit lg:sticky lg:top-24">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center text-white text-lg shadow-lg shadow-cyan-500/30">
+                                🎓
+                            </div>
+                            <div>
+                                <p className="text-xs uppercase tracking-[0.25em] text-cyan-200/80">Student Hub</p>
+                                <h2 className="text-lg font-bold text-white">My Subjects</h2>
+                            </div>
                         </div>
-                        <h2 className="text-2xl font-bold dark:text-white mb-2 relative">No Classes Yet</h2>
-                        <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto relative">
-                            You are not enrolled in any class yet. Ask your teacher to add you!
-                        </p>
+
+                        <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-4 text-sm text-slate-300">
+                            Join a class to unlock your attendance, marks, and session actions.
+                        </div>
+                    </aside>
+
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-500 p-[1px]">
+                        <div className="bg-white dark:bg-dark-800 rounded-[22px] p-12 text-center relative overflow-hidden">
+                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-cyan-200 to-blue-200 dark:from-cyan-900/30 dark:to-blue-900/30 rounded-full blur-2xl"></div>
+                            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-indigo-200 to-purple-200 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-full blur-2xl"></div>
+
+                            <div className="relative mx-auto w-40 h-40 mb-6">
+                                <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="animate-float">
+                                    <circle cx="100" cy="100" r="80" fill="url(#stuGrad)" opacity="0.08" />
+                                    <rect x="55" y="60" width="90" height="80" rx="12" fill="url(#stuGrad)" opacity="0.15" />
+                                    <circle cx="100" cy="85" r="15" fill="#60a5fa" opacity="0.4" />
+                                    <path d="M80 115c0-11 9-20 20-20s20 9 20 20" stroke="#3b82f6" strokeWidth="3" fill="none" strokeLinecap="round" />
+                                    <circle cx="150" cy="55" r="12" fill="#fbbf24" opacity="0.8" />
+                                    <path d="M146 55l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                                    <defs>
+                                        <linearGradient id="stuGrad" x1="0" y1="0" x2="200" y2="200">
+                                            <stop stopColor="#06b6d4" />
+                                            <stop offset="1" stopColor="#6366f1" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                            </div>
+                            <h2 className="text-2xl font-bold dark:text-white mb-2 relative">No Classes Yet</h2>
+                            <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto relative">
+                                You are not enrolled in any class yet. Ask your teacher to add you!
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
