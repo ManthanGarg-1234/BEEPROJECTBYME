@@ -22,7 +22,7 @@ router.post('/start', auth, authorize('teacher'), sessionValidation, async (req,
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { classId, attendanceWindow = 10, latitude, longitude } = req.body;
+        const { classId, attendanceWindow = 10, latitude, longitude, accuracy } = req.body;
 
         // Find class
         const classDoc = await Class.findOne({ classId: classId.toUpperCase() });
@@ -53,7 +53,7 @@ router.post('/start', auth, authorize('teacher'), sessionValidation, async (req,
             qrExpiresAt,
             startTime: now,
             attendanceWindowEnd: new Date(now.getTime() + windowMinutes * 60 * 1000),
-            location: { latitude, longitude }
+            location: { latitude, longitude, accuracy: Number(accuracy) || 0 }
         });
 
         await session.save();

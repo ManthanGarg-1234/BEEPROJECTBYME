@@ -66,7 +66,7 @@ const SessionManager = () => {
     const getLocation = () => {
         if (!navigator.geolocation) { setLocationError('Geolocation is not supported'); return; }
         navigator.geolocation.getCurrentPosition(
-            (pos) => setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+            (pos) => setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy }),
             () => setLocationError('Location access denied. Please enable GPS.'),
             { enableHighAccuracy: true }
         );
@@ -76,7 +76,13 @@ const SessionManager = () => {
         if (!location) { alert('Location is required. Please enable GPS.'); getLocation(); return; }
         setLoading(true);
         try {
-            const res = await api.post('/sessions/start', { classId: selectedClass, attendanceWindow, latitude: location.latitude, longitude: location.longitude });
+            const res = await api.post('/sessions/start', {
+                classId: selectedClass,
+                attendanceWindow,
+                latitude: location.latitude,
+                longitude: location.longitude,
+                accuracy: location.accuracy
+            });
             setActiveSession(res.data.session);
             setQrData(res.data.session.qrToken);
             setWindowClosed(false);

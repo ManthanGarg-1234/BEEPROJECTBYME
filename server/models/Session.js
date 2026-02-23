@@ -33,7 +33,8 @@ const sessionSchema = new mongoose.Schema({
     },
     location: {
         latitude: { type: Number, required: true },
-        longitude: { type: Number, required: true }
+        longitude: { type: Number, required: true },
+        accuracy: { type: Number, default: 0 }
     },
     isActive: {
         type: Boolean,

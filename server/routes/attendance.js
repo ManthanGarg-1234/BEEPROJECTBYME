@@ -81,7 +81,8 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
         // 6. GPS validation
         const radiusMeters = parseInt(process.env.GPS_RADIUS_METERS) || 100;
         const accuracyMeters = Number.isFinite(Number(accuracy)) ? Number(accuracy) : 0;
-        const effectiveRadius = Math.min(radiusMeters + accuracyMeters, 200);
+        const teacherAccuracy = Number.isFinite(Number(session.location?.accuracy)) ? Number(session.location.accuracy) : 0;
+        const effectiveRadius = Math.min(radiusMeters + accuracyMeters + teacherAccuracy, 500);
         const gpsResult = isWithinRadius(
             session.location.latitude,
             session.location.longitude,
@@ -90,7 +91,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             effectiveRadius
         );
 
-        console.log(`[ATTENDANCE DEBUG] GPS check for ${req.user.name}: distance=${gpsResult.distance}m, limit=${effectiveRadius}m (base ${radiusMeters}m, accuracy ${accuracyMeters}m), valid=${gpsResult.isValid}`);
+        console.log(`[ATTENDANCE DEBUG] GPS check for ${req.user.name}: distance=${gpsResult.distance}m, limit=${effectiveRadius}m (base ${radiusMeters}m, student acc ${accuracyMeters}m, teacher acc ${teacherAccuracy}m), valid=${gpsResult.isValid}`);
         console.log(`[ATTENDANCE DEBUG] Session location: ${session.location.latitude}, ${session.location.longitude} | Student location: ${latitude}, ${longitude}`);
 
         if (!gpsResult.isValid) {

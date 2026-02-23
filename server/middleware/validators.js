@@ -115,7 +115,11 @@ const sessionValidation = [
 
     body('longitude')
         .notEmpty().withMessage('Longitude is required')
-        .isFloat({ min: -180, max: 180 }).withMessage('Invalid longitude')
+        .isFloat({ min: -180, max: 180 }).withMessage('Invalid longitude'),
+
+    body('accuracy')
+        .optional()
+        .isFloat({ min: 0, max: 1000 }).withMessage('Invalid GPS accuracy')
 ];
 
 const attendanceValidation = [
