@@ -40,7 +40,7 @@ function App() {
                     preload="metadata"
                     poster="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1600&q=80"
                 >
-                    <source src="https://cdn.pixabay.com/video/2020/08/06/46321-458686009_large.mp4" type="video/mp4" />
+                    <source src="https://storage.coverr.co/videos/coverr-working-on-a-laptop-8530/1080p.mp4" type="video/mp4" />
                 </video>
                 <div className="app-bg-grid"></div>
                 <div className="app-bg-orb app-bg-orb--one"></div>

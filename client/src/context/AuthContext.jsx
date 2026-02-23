@@ -51,7 +51,8 @@ export const AuthProvider = ({ children }) => {
             payload = new FormData();
             Object.entries(data).forEach(([key, val]) => payload.append(key, val));
             payload.append('profilePhoto', photoFile);
-            headers['Content-Type'] = 'multipart/form-data';
+            // Let browser set Content-Type with boundary for multipart
+            headers['Content-Type'] = undefined;
         } else {
             payload = data;
         }
