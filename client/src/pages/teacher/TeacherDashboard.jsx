@@ -304,7 +304,15 @@ const TeacherDashboard = () => {
                                     <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${card.gradient} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
                                     <div className="flex items-center justify-between relative">
                                         <div>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{card.label}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{card.label}</p>
+                                                <span className="relative group">
+                                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-gray-200/70 dark:border-dark-600 text-[10px] text-gray-400 dark:text-gray-300">i</span>
+                                                    <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-44 rounded-lg bg-gray-900 text-white text-[11px] px-2 py-1.5 shadow-lg opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 pointer-events-none">
+                                                        {card.helper}
+                                                    </span>
+                                                </span>
+                                            </div>
                                             <p className={`text-3xl font-extrabold mt-1.5 bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
                                                 {card.value}
                                             </p>
@@ -361,9 +369,17 @@ const TeacherDashboard = () => {
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                                    Each point shows the class-wide attendance percentage for a session date.
-                                </p>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Each point shows the class-wide attendance percentage for a session date.
+                                    </p>
+                                    <span className="relative group">
+                                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-gray-200/70 dark:border-dark-600 text-[10px] text-gray-400 dark:text-gray-300">i</span>
+                                        <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-52 rounded-lg bg-gray-900 text-white text-[11px] px-2 py-1.5 shadow-lg opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 pointer-events-none">
+                                            Trend is computed from attendance records for the selected class only.
+                                        </span>
+                                    </span>
+                                </div>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <AreaChart data={chartData}>
                                         <defs>
