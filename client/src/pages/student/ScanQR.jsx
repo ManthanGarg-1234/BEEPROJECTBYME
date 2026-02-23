@@ -139,7 +139,8 @@ const ScanQR = () => {
                 qrToken,
                 latitude: useLoc.latitude,
                 longitude: useLoc.longitude,
-                deviceId: getDeviceId()
+                deviceId: getDeviceId(),
+                accuracy: useLoc.accuracy
             });
             setResult(res.data);
         } catch (err) {

@@ -20,7 +20,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { qrToken, latitude, longitude, deviceId } = req.body;
+        const { qrToken, latitude, longitude, deviceId, accuracy } = req.body;
         const studentId = req.user._id;
 
         console.log(`[ATTENDANCE DEBUG] Student: ${req.user.name} (${studentId}), Device: ${deviceId}, Location: ${latitude}, ${longitude}`);
@@ -80,22 +80,24 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
 
         // 6. GPS validation
         const radiusMeters = parseInt(process.env.GPS_RADIUS_METERS) || 100;
+        const accuracyMeters = Number.isFinite(Number(accuracy)) ? Number(accuracy) : 0;
+        const effectiveRadius = Math.min(radiusMeters + accuracyMeters, 200);
         const gpsResult = isWithinRadius(
             session.location.latitude,
             session.location.longitude,
             latitude,
             longitude,
-            radiusMeters
+            effectiveRadius
         );
 
-        console.log(`[ATTENDANCE DEBUG] GPS check for ${req.user.name}: distance=${gpsResult.distance}m, limit=${radiusMeters}m, valid=${gpsResult.isValid}`);
+        console.log(`[ATTENDANCE DEBUG] GPS check for ${req.user.name}: distance=${gpsResult.distance}m, limit=${effectiveRadius}m (base ${radiusMeters}m, accuracy ${accuracyMeters}m), valid=${gpsResult.isValid}`);
         console.log(`[ATTENDANCE DEBUG] Session location: ${session.location.latitude}, ${session.location.longitude} | Student location: ${latitude}, ${longitude}`);
 
         if (!gpsResult.isValid) {
             await logSuspicious(studentId, session._id, 'GPS_OUT_OF_RANGE', deviceId, { latitude, longitude },
                 `Distance: ${gpsResult.distance}m, Limit: ${radiusMeters}m`);
             return res.status(400).json({
-                message: `You are too far from the classroom (${gpsResult.distance}m away, limit: ${radiusMeters}m)`
+                message: `You are too far from the classroom (${gpsResult.distance}m away, limit: ${effectiveRadius}m)`
             });
         }
 
@@ -118,7 +120,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
         }
 
         // Check for suspicious patterns
-        if (gpsResult.distance > radiusMeters * 0.8) {
+        if (gpsResult.distance > effectiveRadius * 0.8) {
             suspiciousFlag = true;
         }
 

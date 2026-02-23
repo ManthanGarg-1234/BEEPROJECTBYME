@@ -131,7 +131,11 @@ const attendanceValidation = [
         .isFloat({ min: -180, max: 180 }).withMessage('Invalid longitude'),
 
     body('deviceId')
-        .notEmpty().withMessage('Device ID is required')
+        .notEmpty().withMessage('Device ID is required'),
+
+    body('accuracy')
+        .optional()
+        .isFloat({ min: 0, max: 1000 }).withMessage('Invalid GPS accuracy')
 ];
 
 module.exports = {
