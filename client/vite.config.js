@@ -5,6 +5,12 @@ export default defineConfig({
     plugins: [react()],
     server: {
         port: 5173,
+        host: true,
+        allowedHosts: ['charlena-filmiest-langston.ngrok-free.dev'],
+        hmr: {
+            host: 'charlena-filmiest-langston.ngrok-free.dev',
+            clientPort: 443
+        },
         proxy: {
             '/api': {
                 target: 'http://localhost:5000',
