@@ -37,6 +37,27 @@ const TeacherDashboard = () => {
     const animStudents = useAnimatedCounter(stats?.totalStudents);
     const animBelow = useAnimatedCounter(stats?.belowThresholdCount);
 
+    const quickNav = [
+        { label: 'Dashboard', path: '/teacher/dashboard', icon: '📊' },
+        { label: 'Classes', path: '/teacher/classes', icon: '📚' },
+        { label: 'Session', path: '/teacher/session', icon: '🎯' },
+        { label: 'Manual', path: '/teacher/manual-attendance', icon: '✏️' },
+        { label: 'Reports', path: '/teacher/reports', icon: '📈' },
+    ];
+
+    const assignedSubjects = [
+        { code: 'CSE201', name: 'Data Structures & Algorithms', semester: 'III', groups: ['CSE-A', 'CSE-B'] },
+        { code: 'CSE252', name: 'Operating Systems', semester: 'V', groups: ['CSE-B'] },
+        { code: 'CSE341', name: 'Computer Networks', semester: 'VI', groups: ['CSE-A'] },
+        { code: 'CSE368', name: 'DBMS Lab', semester: 'IV', groups: ['CSE-A', 'CSE-C'] },
+    ];
+
+    const assignedGroups = [
+        { group: 'CSE-A', year: '2nd Year', strength: 62, mentor: true },
+        { group: 'CSE-B', year: '2nd Year', strength: 58, mentor: false },
+        { group: 'CSE-C', year: '2nd Year', strength: 55, mentor: false },
+    ];
+
     useEffect(() => { fetchClasses(); }, []);
 
     useEffect(() => {
@@ -164,39 +185,109 @@ const TeacherDashboard = () => {
 
     return (
         <div className="page-container">
-            {/* Header with gradient accent */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 animate-fade-in">
-                <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                            <span className="text-white text-lg">📊</span>
+            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+                <aside className="glass-card-solid p-5 h-fit lg:sticky lg:top-24">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-r from-cyan-500 to-lime-400 flex items-center justify-center text-white text-lg shadow-lg shadow-cyan-500/30">
+                            🧭
                         </div>
-                        <h1 className="text-3xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
-                            Teacher Dashboard
-                        </h1>
+                        <div>
+                            <p className="text-xs uppercase tracking-[0.25em] text-cyan-200/80">Control Hub</p>
+                            <h2 className="text-lg font-bold text-white">Teacher Sidebar</h2>
+                        </div>
                     </div>
-                    <p className="text-gray-500 dark:text-gray-400 ml-[52px]">Real-time overview of your class performance</p>
-                </div>
-                <div className="relative">
-                    <select
-                        id="class-selector"
-                        value={selectedClass}
-                        onChange={(e) => setSelectedClass(e.target.value)}
-                        className="appearance-none bg-white dark:bg-dark-700 border-2 border-indigo-200 dark:border-indigo-900/50 text-gray-800 dark:text-gray-200 rounded-xl px-5 py-3 pr-10 font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all cursor-pointer min-w-[220px]"
-                    >
-                        {classes.map(c => (
-                            <option key={c._id} value={c.classId}>{c.classId} - {c.subject}</option>
-                        ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-indigo-400">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
 
-            {stats && (
+                    <div className="space-y-3 mb-6">
+                        {quickNav.map((item) => (
+                            <button
+                                key={item.path}
+                                type="button"
+                                onClick={() => navigate(item.path)}
+                                className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white transition-all duration-300"
+                            >
+                                <span className="flex items-center gap-2 text-sm font-medium">
+                                    <span className="text-lg">{item.icon}</span>
+                                    {item.label}
+                                </span>
+                                <span className="text-xs text-slate-400">→</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mb-6">
+                        <h3 className="text-sm font-semibold text-slate-200 mb-3">Assigned Subjects</h3>
+                        <div className="space-y-3">
+                            {assignedSubjects.map((subject) => (
+                                <div key={subject.code} className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-3">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm font-semibold text-white">{subject.code}</p>
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-200">Sem {subject.semester}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-300 mt-1">{subject.name}</p>
+                                    <div className="flex flex-wrap gap-1 mt-2">
+                                        {subject.groups.map((group) => (
+                                            <span key={group} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-200 border border-slate-700/60">
+                                                {group}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-sm font-semibold text-slate-200 mb-3">Allotted Groups</h3>
+                        <div className="space-y-2">
+                            {assignedGroups.map((group) => (
+                                <div key={group.group} className="flex items-center justify-between rounded-xl border border-slate-700/60 bg-slate-900/60 px-3 py-2">
+                                    <div>
+                                        <p className="text-sm font-semibold text-white">{group.group}</p>
+                                        <p className="text-xs text-slate-400">{group.year} • {group.strength} students</p>
+                                    </div>
+                                    {group.mentor && (
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-lime-500/10 text-lime-200">Mentor</span>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </aside>
+
+                <div>
+                    {/* Header with gradient accent */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 animate-fade-in">
+                        <div>
+                            <div className="flex items-center gap-3 mb-1">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                                    <span className="text-white text-lg">📊</span>
+                                </div>
+                                <h1 className="text-3xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+                                    Teacher Dashboard
+                                </h1>
+                            </div>
+                            <p className="text-gray-500 dark:text-gray-400 ml-[52px]">Real-time overview of your class performance</p>
+                        </div>
+                        <div className="relative">
+                            <select
+                                id="class-selector"
+                                value={selectedClass}
+                                onChange={(e) => setSelectedClass(e.target.value)}
+                                className="appearance-none bg-white dark:bg-dark-700 border-2 border-indigo-200 dark:border-indigo-900/50 text-gray-800 dark:text-gray-200 rounded-xl px-5 py-3 pr-10 font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all cursor-pointer min-w-[220px]"
+                            >
+                                {classes.map(c => (
+                                    <option key={c._id} value={c.classId}>{c.classId} - {c.subject}</option>
+                                ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-indigo-400">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    {stats && (
                 <>
                     {/* Vibrant Gradient Stat Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8 stagger-children">
@@ -350,6 +441,8 @@ const TeacherDashboard = () => {
                     </div>
                 </>
             )}
+                </div>
+            </div>
         </div>
     );
 };

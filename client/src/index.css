@@ -3,13 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  --gradient-aurora: linear-gradient(135deg, #667eea 0%, #a855f7 30%, #ec4899 60%, #667eea 100%);
-  --shadow-glow: 0 0 20px rgba(102, 126, 234, 0.3);
-  --shadow-glow-lg: 0 0 40px rgba(102, 126, 234, 0.4), 0 0 80px rgba(168, 85, 247, 0.2);
+  --font-body: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-ink: #0b0f14;
+  --color-ink-2: #111827;
+  --color-cyan: #22d3ee;
+  --color-electric: #60a5fa;
+  --color-lime: #a3e635;
+  --color-slate: #94a3b8;
+  --gradient-primary: linear-gradient(120deg, #22d3ee 0%, #60a5fa 45%, #a3e635 100%);
+  --gradient-success: linear-gradient(120deg, #22c55e 0%, #16a34a 100%);
+  --gradient-danger: linear-gradient(120deg, #f43f5e 0%, #e11d48 100%);
+  --gradient-warning: linear-gradient(120deg, #f59e0b 0%, #f97316 100%);
+  --gradient-aurora: linear-gradient(120deg, rgba(34, 211, 238, 0.35), rgba(96, 165, 250, 0.35), rgba(163, 230, 53, 0.2));
+  --shadow-glow: 0 0 18px rgba(34, 211, 238, 0.25);
+  --shadow-glow-lg: 0 0 35px rgba(96, 165, 250, 0.35), 0 0 70px rgba(34, 211, 238, 0.18);
 }
 
 * {
@@ -19,24 +27,39 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--color-ink);
+  color: #e5e7eb;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+#root {
+  min-height: 100vh;
 }
 
 /* Light mode */
-body {
-  @apply bg-gray-50 text-gray-900;
+body:not(.dark) {
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 /* Dark mode */
 .dark body,
 body.dark {
-  @apply bg-dark-900 text-gray-100;
+  background: var(--color-ink);
+  color: #e5e7eb;
 }
 
 .dark {
-  @apply bg-dark-900 text-gray-100;
+  background: var(--color-ink);
+  color: #e5e7eb;
 }
 
 /* Custom scrollbar */
@@ -57,12 +80,96 @@ body.dark {
 }
 
 /* ============================================
+   APP BACKDROP
+   ============================================ */
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  color: #e2e8f0;
+  background: var(--color-ink);
+  overflow-x: hidden;
+}
+
+.app-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.app-bg-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.16;
+  filter: saturate(1.2) contrast(1.05) brightness(0.8);
+}
+
+.app-bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at top, rgba(0, 0, 0, 0.8), transparent 70%);
+  animation: gridDrift 18s linear infinite;
+}
+
+.app-bg-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(20px);
+  opacity: 0.6;
+  mix-blend-mode: screen;
+  animation: orbFloat 12s ease-in-out infinite;
+}
+
+.app-bg-orb--one {
+  width: 420px;
+  height: 420px;
+  top: -120px;
+  left: -120px;
+  background: rgba(34, 211, 238, 0.35);
+}
+
+.app-bg-orb--two {
+  width: 360px;
+  height: 360px;
+  bottom: -140px;
+  right: -120px;
+  background: rgba(96, 165, 250, 0.3);
+  animation-delay: -4s;
+}
+
+.app-bg-orb--three {
+  width: 280px;
+  height: 280px;
+  top: 20%;
+  right: 12%;
+  background: rgba(163, 230, 53, 0.24);
+  animation-delay: -7s;
+}
+
+.app-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* ============================================
    GLASS MORPHISM & CARD STYLES
    ============================================ */
 @layer components {
   .glass-card {
-    @apply bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-dark-600/50 shadow-lg;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    @apply backdrop-blur-xl rounded-2xl border shadow-lg;
+    background: rgba(12, 18, 28, 0.65);
+    border-color: rgba(148, 163, 184, 0.18);
+    box-shadow: 0 12px 40px rgba(2, 6, 23, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .glass-card:hover {
@@ -70,8 +177,11 @@ body.dark {
   }
 
   .glass-card-solid {
-    @apply bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-dark-700 shadow-lg;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    @apply rounded-2xl border shadow-lg;
+    background: rgba(14, 22, 34, 0.88);
+    border-color: rgba(148, 163, 184, 0.2);
+    box-shadow: 0 18px 50px rgba(2, 6, 23, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .glass-card-solid:hover {
@@ -83,10 +193,10 @@ body.dark {
      BUTTON STYLES
      ============================================ */
   .btn-primary {
-    @apply px-6 py-3 bg-gradient-to-r from-primary-500 to-accent-500 text-white font-semibold rounded-xl
-    hover:from-primary-600 hover:to-accent-600 transition-all duration-300
-    shadow-lg hover:shadow-xl hover:shadow-primary-500/25
-    active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-6 py-3 text-white font-semibold rounded-xl transition-all duration-300 active:scale-[0.98]
+    disabled:opacity-50 disabled:cursor-not-allowed;
+    background-image: var(--gradient-primary);
+    box-shadow: 0 12px 30px rgba(34, 211, 238, 0.25);
     position: relative;
     overflow: hidden;
   }
@@ -110,17 +220,17 @@ body.dark {
   }
 
   .btn-secondary {
-    @apply px-6 py-3 bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-200 font-semibold rounded-xl
-    hover:bg-gray-200 dark:hover:bg-dark-600 transition-all duration-300
-    border border-gray-200 dark:border-dark-600
-    active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-6 py-3 text-slate-100 font-semibold rounded-xl transition-all duration-300
+    border active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(148, 163, 184, 0.25);
   }
 
   .btn-danger {
-    @apply px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl
-    hover:from-red-600 hover:to-red-700 transition-all duration-300
-    shadow-lg hover:shadow-xl hover:shadow-red-500/25
-    active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-6 py-3 text-white font-semibold rounded-xl transition-all duration-300 active:scale-[0.98]
+    disabled:opacity-50 disabled:cursor-not-allowed;
+    background-image: var(--gradient-danger);
+    box-shadow: 0 12px 30px rgba(244, 63, 94, 0.25);
     position: relative;
     overflow: hidden;
   }
@@ -129,15 +239,14 @@ body.dark {
      INPUT STYLES
      ============================================ */
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-dark-600
-    bg-gray-50 dark:bg-dark-700 text-gray-900 dark:text-gray-100
-    focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500
-    outline-none transition-all duration-300
-    placeholder-gray-400 dark:placeholder-gray-500;
+    @apply w-full px-4 py-3 rounded-xl border text-gray-100 outline-none transition-all duration-300;
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(148, 163, 184, 0.3);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
   }
 
   .input-field:focus {
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
     transform: translateY(-1px);
   }
 
@@ -145,7 +254,7 @@ body.dark {
      STAT CARD WITH HOVER EFFECTS
      ============================================ */
   .stat-card {
-    @apply glass-card-solid p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1;
+    @apply glass-card-solid p-6 transition-all duration-300 hover:-translate-y-1;
     position: relative;
     overflow: hidden;
   }
@@ -172,12 +281,14 @@ body.dark {
      ============================================ */
   .page-container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+    animation: pageIn 0.45s ease-out;
   }
 
   .section-title {
-    @apply text-2xl font-bold bg-gradient-to-r from-primary-500 to-accent-500 bg-clip-text text-transparent;
+    @apply text-2xl font-bold bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
     background-size: 200% auto;
-    animation: gradientShift 4s ease infinite;
+    animation: gradientShift 5s ease infinite;
   }
 }
 
@@ -237,6 +348,23 @@ body.dark {
 @keyframes gradientShift {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
+}
+
+@keyframes gridDrift {
+  0% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-24px, -18px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes orbFloat {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(20px, -30px, 0) scale(1.08); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes pageIn {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 /* ============================================

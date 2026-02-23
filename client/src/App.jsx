@@ -29,9 +29,27 @@ function App() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors duration-300">
-            {isAuthenticated && <Navbar />}
-            <Routes>
+        <div className="app-shell">
+            <div className="app-bg" aria-hidden="true">
+                <video
+                    className="app-bg-video"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                    poster="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1600&q=80"
+                >
+                    <source src="https://cdn.pixabay.com/video/2020/08/06/46321-458686009_large.mp4" type="video/mp4" />
+                </video>
+                <div className="app-bg-grid"></div>
+                <div className="app-bg-orb app-bg-orb--one"></div>
+                <div className="app-bg-orb app-bg-orb--two"></div>
+                <div className="app-bg-orb app-bg-orb--three"></div>
+            </div>
+            <div className="app-content">
+                {isAuthenticated && <Navbar />}
+                <Routes>
                 {/* Public Routes */}
                 <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to={getDefaultRedirect()} />} />
                 <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to={getDefaultRedirect()} />} />
@@ -77,7 +95,8 @@ function App() {
 
                 {/* Default redirect */}
                 <Route path="*" element={<Navigate to={getDefaultRedirect()} />} />
-            </Routes>
+                </Routes>
+            </div>
         </div>
     );
 }

@@ -41,11 +41,17 @@ const Login = () => {
     return (
         <div className="min-h-screen flex">
             {/* Left Side - Illustration Panel */}
-            <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 items-center justify-center overflow-hidden">
+            <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 items-center justify-center overflow-hidden">
+                <img
+                    src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80"
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover opacity-20"
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-transparent to-lime-500/10"></div>
                 {/* Animated background blobs */}
-                <div className="absolute top-10 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-blob"></div>
-                <div className="absolute bottom-10 right-10 w-72 h-72 bg-pink-400/10 rounded-full blur-3xl animate-blob" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute top-1/2 left-1/4 w-48 h-48 bg-yellow-400/10 rounded-full blur-3xl animate-blob" style={{ animationDelay: '4s' }}></div>
+                <div className="absolute top-10 left-10 w-72 h-72 bg-cyan-400/10 rounded-full blur-3xl animate-blob"></div>
+                <div className="absolute bottom-10 right-10 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl animate-blob" style={{ animationDelay: '2s' }}></div>
+                <div className="absolute top-1/2 left-1/4 w-48 h-48 bg-lime-400/10 rounded-full blur-3xl animate-blob" style={{ animationDelay: '4s' }}></div>
 
                 {/* Floating particles */}
                 {particles.map(p => (
@@ -96,15 +102,15 @@ const Login = () => {
 
                     <h2 className="text-3xl font-extrabold text-white mb-3">Welcome to AttendEase</h2>
                     <p className="text-white/70 text-lg max-w-md mx-auto">
-                        Smart QR-based attendance tracking for modern classrooms
+                        Live attendance intelligence with instant QR verification and analytics.
                     </p>
 
                     {/* Feature highlights */}
                     <div className="mt-10 flex flex-col gap-3 max-w-xs mx-auto">
                         {[
                             { icon: '⚡', text: 'Instant QR scanning' },
-                            { icon: '📊', text: 'Real-time analytics' },
-                            { icon: '🔒', text: 'Anti-proxy detection' },
+                            { icon: '📡', text: 'Live session sync' },
+                            { icon: '🧭', text: 'GPS proximity checks' },
                         ].map((f, i) => (
                             <div key={i} className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 text-white/90 text-sm font-medium animate-slide-right" style={{ animationDelay: `${0.3 + i * 0.15}s` }}>
                                 <span className="text-lg">{f.icon}</span>
@@ -112,65 +118,68 @@ const Login = () => {
                             </div>
                         ))}
                     </div>
+
+                    <div className="mt-8 glass-card p-4 text-left max-w-xs mx-auto">
+                        <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/80 mb-2">Next up</p>
+                        <p className="text-white text-sm font-semibold">Dynamic class heatmaps and auto warnings</p>
+                        <p className="text-white/60 text-xs mt-2">Peek inside after login.</p>
+                    </div>
                 </div>
             </div>
 
             {/* Right Side - Login Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 dark:bg-dark-900 relative overflow-hidden">
-                {/* Subtle background gradient */}
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-indigo-200 to-purple-200 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-full blur-3xl"></div>
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-pink-200 to-rose-200 dark:from-pink-900/20 dark:to-rose-900/20 rounded-full blur-3xl"></div>
-
+            <div className="w-full lg:w-1/2 flex items-center justify-center relative overflow-hidden">
                 <div className="w-full max-w-md mx-auto px-8 relative z-10">
                     {/* Mobile logo */}
                     <div className="lg:hidden text-center mb-8">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center mx-auto shadow-xl shadow-purple-500/25 mb-4">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-500 to-lime-400 flex items-center justify-center mx-auto shadow-xl shadow-cyan-500/25 mb-4">
                             <span className="text-white text-2xl font-bold">A</span>
                         </div>
-                        <h1 className="text-2xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+                        <h1 className="text-2xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-400 to-lime-400 bg-clip-text text-transparent">
                             AttendEase
                         </h1>
                     </div>
 
                     <div className="text-center lg:text-left mb-8">
-                        <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">Welcome back!</h2>
-                        <p className="text-gray-500 dark:text-gray-400">Sign in to your account to continue</p>
+                        <h2 className="text-3xl font-extrabold text-white mb-2">Welcome back!</h2>
+                        <p className="text-slate-300">Sign in to continue the session flow</p>
                     </div>
 
                     {error && (
-                        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-rose-50 to-red-50 dark:from-rose-900/20 dark:to-red-900/20 border border-rose-200 dark:border-rose-800/30 text-rose-600 dark:text-rose-400 text-sm font-medium flex items-center gap-2 animate-slide-down">
+                        <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-400/30 text-rose-200 text-sm font-medium flex items-center gap-2 animate-slide-down">
                             <span>⚠️</span> {error}
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="glass-card-solid p-7">
+                        <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
+                            <label className="block text-sm font-semibold text-slate-200 mb-2">Email Address</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                     </svg>
                                 </div>
                                 <input id="email" type="email" required value={email} onChange={e => setEmail(e.target.value)}
                                     placeholder="you@example.com"
-                                    className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-white dark:bg-dark-700 border-2 border-gray-200 dark:border-dark-600 text-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all duration-300" />
+                                    className="input-field pl-12 pr-4" />
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Password</label>
+                            <label className="block text-sm font-semibold text-slate-200 mb-2">Password</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-5 h-5 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                     </svg>
                                 </div>
                                 <input id="password" type={showPassword ? 'text' : 'password'} required value={password} onChange={e => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-white dark:bg-dark-700 border-2 border-gray-200 dark:border-dark-600 text-gray-800 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all duration-300" />
+                                    className="input-field pl-12 pr-12" />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-indigo-500 transition-colors">
+                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-cyan-300 transition-colors">
                                     {showPassword ? (
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
@@ -186,7 +195,7 @@ const Login = () => {
                         </div>
 
                         <button id="login-btn" type="submit" disabled={loading}
-                            className="w-full py-3.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/35 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                            className="w-full btn-primary py-3.5 hover:scale-[1.02] disabled:hover:scale-100">
                             {loading ? (
                                 <span className="flex items-center justify-center gap-2">
                                     <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -198,10 +207,11 @@ const Login = () => {
                             ) : 'Sign In'}
                         </button>
                     </form>
+                    </div>
 
-                    <p className="text-center mt-8 text-gray-500 dark:text-gray-400 text-sm">
+                    <p className="text-center mt-8 text-slate-400 text-sm">
                         Don't have an account?{' '}
-                        <Link to="/register" className="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-purple-600 transition-colors">
+                        <Link to="/register" className="font-semibold text-cyan-300 hover:text-lime-300 transition-colors">
                             Create one →
                         </Link>
                     </p>
