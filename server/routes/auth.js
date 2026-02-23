@@ -68,8 +68,15 @@ router.post('/register', upload.single('profilePhoto'), registerValidation, asyn
             return res.status(400).json({ message: 'User with this email already exists' });
         }
 
-        // Extract roll number from email if not provided
-        const extractedRoll = rollNumber || email.split('@')[0];
+        // Extract roll number from email if not provided (only if 10 digits)
+        const emailLocal = email.split('@')[0];
+        const rollFromEmail = /^\d{10}$/.test(emailLocal) ? emailLocal : undefined;
+        const extractedRoll = rollNumber || rollFromEmail;
+
+        if (role === 'student' && !extractedRoll) {
+            if (req.file) fs.unlinkSync(req.file.path);
+            return res.status(400).json({ message: 'Student roll number is required' });
+        }
 
         const user = new User({
             name,

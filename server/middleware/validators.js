@@ -17,10 +17,13 @@ const registerValidation = [
             if (!domainPattern.test(value)) {
                 throw new Error(`Email must be at ${COLLEGE_DOMAIN}`);
             }
-            if (req.body?.role === 'student') {
-                const studentPattern = new RegExp(`^\d{10}@${COLLEGE_DOMAIN.replace('.', '\.')}$`);
-                if (!studentPattern.test(value)) {
-                    throw new Error(`Student email must be in format: rollNumber@${COLLEGE_DOMAIN}`);
+
+            const localPart = value.split('@')[0];
+            const rollPattern = /^\d{10}$/;
+
+            if (req.body?.role === 'student' && !rollPattern.test(localPart)) {
+                if (!rollPattern.test(req.body?.rollNumber || '')) {
+                    throw new Error(`Student email must be 10 digits or provide roll number`);
                 }
             }
             return true;
@@ -39,8 +42,21 @@ const registerValidation = [
         .isIn(['teacher', 'student']).withMessage('Role must be teacher or student'),
 
     body('rollNumber')
-        .optional()
-        .matches(/^\d{10}$/).withMessage('Roll number must be exactly 10 digits')
+        .custom((value, { req }) => {
+            const rollPattern = /^\d{10}$/;
+            const emailLocal = (req.body?.email || '').split('@')[0];
+
+            if (req.body?.role === 'student' && !rollPattern.test(emailLocal)) {
+                if (!rollPattern.test(value || '')) {
+                    throw new Error('Roll number is required for students when email is not 10 digits');
+                }
+            }
+
+            if (value && !rollPattern.test(value)) {
+                throw new Error('Roll number must be exactly 10 digits');
+            }
+            return true;
+        })
 ];
 
 const loginValidation = [
