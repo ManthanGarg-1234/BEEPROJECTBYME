@@ -153,6 +153,7 @@ const TeacherDashboard = () => {
             bgLight: 'from-blue-50 to-cyan-50',
             shadowColor: 'shadow-blue-500/20',
             iconBg: 'bg-blue-400/20',
+            helper: 'Sessions conducted for this class',
         },
         {
             label: 'Avg Attendance',
@@ -162,6 +163,7 @@ const TeacherDashboard = () => {
             bgLight: 'from-emerald-50 to-teal-50',
             shadowColor: 'shadow-emerald-500/20',
             iconBg: 'bg-emerald-400/20',
+            helper: 'Class average across all sessions',
         },
         {
             label: 'Total Students',
@@ -171,6 +173,7 @@ const TeacherDashboard = () => {
             bgLight: 'from-violet-50 to-purple-50',
             shadowColor: 'shadow-violet-500/20',
             iconBg: 'bg-violet-400/20',
+            helper: 'Enrolled in selected class',
         },
         {
             label: 'Below 75%',
@@ -180,8 +183,11 @@ const TeacherDashboard = () => {
             bgLight: 'from-rose-50 to-orange-50',
             shadowColor: 'shadow-rose-500/20',
             iconBg: 'bg-rose-400/20',
+            helper: 'Students under the 75% rule',
         },
     ];
+
+    const latestTrend = chartData.length > 0 ? chartData[chartData.length - 1] : null;
 
     return (
         <div className="page-container">
@@ -302,6 +308,7 @@ const TeacherDashboard = () => {
                                             <p className={`text-3xl font-extrabold mt-1.5 bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
                                                 {card.value}
                                             </p>
+                                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{card.helper}</p>
                                         </div>
                                         <div className={`w-14 h-14 rounded-2xl ${card.iconBg} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
                                             <span className="text-2xl">{card.icon}</span>
@@ -310,6 +317,10 @@ const TeacherDashboard = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-6">
+                        Metrics reflect the selected class only. Attendance % is calculated from present records vs total sessions.
                     </div>
 
                     {/* Semester Progress - Colorful */}
@@ -339,10 +350,20 @@ const TeacherDashboard = () => {
                         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 p-[1px] mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
                             <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
                                 <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-blue-200 to-cyan-200 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-full blur-3xl"></div>
-                                <h3 className="font-bold dark:text-white mb-5 flex items-center gap-2 relative">
+                                <div className="flex items-center justify-between mb-5">
+                                    <h3 className="font-bold dark:text-white flex items-center gap-2 relative">
                                     <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white text-sm">📈</span>
                                     Daily Attendance Trend
-                                </h3>
+                                    </h3>
+                                    {latestTrend && (
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            Latest: {latestTrend.percentage}% on {latestTrend.date}
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                                    Each point shows the class-wide attendance percentage for a session date.
+                                </p>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <AreaChart data={chartData}>
                                         <defs>
