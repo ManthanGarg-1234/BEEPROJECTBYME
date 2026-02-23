@@ -44,8 +44,18 @@ export const AuthProvider = ({ children }) => {
         return userData;
     };
 
-    const register = async (data) => {
-        const res = await api.post('/auth/register', data);
+    const register = async (data, photoFile) => {
+        let payload;
+        let headers = {};
+        if (photoFile) {
+            payload = new FormData();
+            Object.entries(data).forEach(([key, val]) => payload.append(key, val));
+            payload.append('profilePhoto', photoFile);
+            headers['Content-Type'] = 'multipart/form-data';
+        } else {
+            payload = data;
+        }
+        const res = await api.post('/auth/register', payload, { headers });
         const { token: newToken, user: userData } = res.data;
         localStorage.setItem('token', newToken);
         localStorage.setItem('user', JSON.stringify(userData));

@@ -1,7 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import api from '../../api';
+
+// Animated counter hook
+const useAnimatedCounter = (end, duration = 1200) => {
+    const [count, setCount] = useState(0);
+    const prevEnd = useRef(0);
+    useEffect(() => {
+        if (end === undefined || end === null) return;
+        const startVal = prevEnd.current;
+        prevEnd.current = end;
+        const startTime = Date.now();
+        const step = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.round(startVal + (end - startVal) * eased));
+            if (progress < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    }, [end, duration]);
+    return count;
+};
 
 const TeacherDashboard = () => {
     const [classes, setClasses] = useState([]);
@@ -11,9 +32,12 @@ const TeacherDashboard = () => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchClasses();
-    }, []);
+    const animSessions = useAnimatedCounter(stats?.totalSessions);
+    const animAvg = useAnimatedCounter(stats?.avgAttendance);
+    const animStudents = useAnimatedCounter(stats?.totalStudents);
+    const animBelow = useAnimatedCounter(stats?.belowThresholdCount);
+
+    useEffect(() => { fetchClasses(); }, []);
 
     useEffect(() => {
         if (selectedClass) {
@@ -27,37 +51,29 @@ const TeacherDashboard = () => {
             const res = await api.get('/classes');
             setClasses(res.data);
             if (res.data.length > 0) setSelectedClass(res.data[0].classId);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+        } catch (err) { console.error(err); }
+        finally { setLoading(false); }
     };
 
     const fetchDashboard = async (classId) => {
-        try {
-            const res = await api.get(`/analytics/dashboard/${classId}`);
-            setStats(res.data);
-        } catch (err) {
-            console.error(err);
-        }
+        try { const res = await api.get(`/analytics/dashboard/${classId}`); setStats(res.data); }
+        catch (err) { console.error(err); }
     };
 
     const fetchChart = async (classId) => {
-        try {
-            const res = await api.get(`/analytics/daily-chart/${classId}`);
-            setChartData(res.data);
-        } catch (err) {
-            console.error(err);
-        }
+        try { const res = await api.get(`/analytics/daily-chart/${classId}`); setChartData(res.data); }
+        catch (err) { console.error(err); }
     };
 
     if (loading) {
         return (
             <div className="page-container">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    {[1, 2, 3, 4].map(i => <div key={i} className="stat-card h-32 skeleton"></div>)}
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-36 rounded-2xl skeleton"></div>
+                    ))}
                 </div>
+                <div className="mt-8 h-72 skeleton rounded-2xl"></div>
             </div>
         );
     }
@@ -65,176 +81,271 @@ const TeacherDashboard = () => {
     if (classes.length === 0) {
         return (
             <div className="page-container">
-                <div className="glass-card-solid p-12 text-center">
-                    <span className="text-6xl mb-4 block">📚</span>
-                    <h2 className="text-2xl font-bold mb-2 dark:text-white">No Classes Yet</h2>
-                    <p className="text-gray-500 dark:text-gray-400 mb-6">Create your first class to get started</p>
-                    <button onClick={() => navigate('/teacher/classes')} className="btn-primary">
-                        Create Class
-                    </button>
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1">
+                    <div className="bg-white dark:bg-dark-800 rounded-[22px] p-12 text-center relative overflow-hidden">
+                        {/* Decorative circles */}
+                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-purple-200 to-pink-200 dark:from-purple-900/30 dark:to-pink-900/30 rounded-full blur-2xl"></div>
+                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-blue-200 to-indigo-200 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full blur-2xl"></div>
+
+                        {/* SVG Illustration */}
+                        <div className="relative mx-auto w-48 h-48 mb-6">
+                            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="animate-float">
+                                <circle cx="100" cy="100" r="80" fill="url(#emptyGrad)" opacity="0.1" />
+                                <rect x="60" y="50" width="80" height="100" rx="8" fill="url(#emptyGrad)" opacity="0.2" />
+                                <rect x="70" y="65" width="45" height="4" rx="2" fill="#818cf8" />
+                                <rect x="70" y="75" width="35" height="4" rx="2" fill="#a78bfa" />
+                                <rect x="70" y="85" width="50" height="4" rx="2" fill="#818cf8" />
+                                <rect x="70" y="100" width="20" height="20" rx="4" fill="#c084fc" opacity="0.3" />
+                                <path d="M76 110L80 114L88 106" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                <rect x="95" y="100" width="20" height="20" rx="4" fill="#818cf8" opacity="0.3" />
+                                <rect x="70" y="125" width="55" height="4" rx="2" fill="#a78bfa" opacity="0.5" />
+                                <circle cx="155" cy="55" r="15" fill="#fbbf24" opacity="0.8" />
+                                <path d="M150 55L154 59L160 51" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                                <defs>
+                                    <linearGradient id="emptyGrad" x1="0" y1="0" x2="200" y2="200">
+                                        <stop stopColor="#667eea" />
+                                        <stop offset="1" stopColor="#a855f7" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+
+                        <h2 className="text-2xl font-bold mb-2 dark:text-white relative">No Classes Yet</h2>
+                        <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-sm mx-auto relative">
+                            Create your first class to start tracking attendance and generate beautiful reports
+                        </p>
+                        <button onClick={() => navigate('/teacher/classes')} className="relative bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 active:scale-95">
+                            ✨ Create Your First Class
+                        </button>
+                    </div>
                 </div>
             </div>
         );
     }
 
+    const statCards = [
+        {
+            label: 'Total Sessions',
+            value: animSessions,
+            icon: '📅',
+            gradient: 'from-blue-500 to-cyan-400',
+            bgLight: 'from-blue-50 to-cyan-50',
+            shadowColor: 'shadow-blue-500/20',
+            iconBg: 'bg-blue-400/20',
+        },
+        {
+            label: 'Avg Attendance',
+            value: `${animAvg}%`,
+            icon: '📊',
+            gradient: 'from-emerald-500 to-teal-400',
+            bgLight: 'from-emerald-50 to-teal-50',
+            shadowColor: 'shadow-emerald-500/20',
+            iconBg: 'bg-emerald-400/20',
+        },
+        {
+            label: 'Total Students',
+            value: animStudents,
+            icon: '👥',
+            gradient: 'from-violet-500 to-purple-400',
+            bgLight: 'from-violet-50 to-purple-50',
+            shadowColor: 'shadow-violet-500/20',
+            iconBg: 'bg-violet-400/20',
+        },
+        {
+            label: 'Below 75%',
+            value: animBelow,
+            icon: '⚠️',
+            gradient: 'from-rose-500 to-orange-400',
+            bgLight: 'from-rose-50 to-orange-50',
+            shadowColor: 'shadow-rose-500/20',
+            iconBg: 'bg-rose-400/20',
+        },
+    ];
+
     return (
-        <div className="page-container animate-fade-in">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="page-container">
+            {/* Header with gradient accent */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 animate-fade-in">
                 <div>
-                    <h1 className="section-title text-3xl">Teacher Dashboard</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Overview of your class performance</p>
+                    <div className="flex items-center gap-3 mb-1">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                            <span className="text-white text-lg">📊</span>
+                        </div>
+                        <h1 className="text-3xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+                            Teacher Dashboard
+                        </h1>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400 ml-[52px]">Real-time overview of your class performance</p>
                 </div>
-                <select
-                    id="class-selector"
-                    value={selectedClass}
-                    onChange={(e) => setSelectedClass(e.target.value)}
-                    className="input-field w-auto min-w-[200px]"
-                >
-                    {classes.map(c => (
-                        <option key={c._id} value={c.classId}>{c.classId} - {c.subject}</option>
-                    ))}
-                </select>
+                <div className="relative">
+                    <select
+                        id="class-selector"
+                        value={selectedClass}
+                        onChange={(e) => setSelectedClass(e.target.value)}
+                        className="appearance-none bg-white dark:bg-dark-700 border-2 border-indigo-200 dark:border-indigo-900/50 text-gray-800 dark:text-gray-200 rounded-xl px-5 py-3 pr-10 font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all cursor-pointer min-w-[220px]"
+                    >
+                        {classes.map(c => (
+                            <option key={c._id} value={c.classId}>{c.classId} - {c.subject}</option>
+                        ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-indigo-400">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
+                </div>
             </div>
 
             {stats && (
                 <>
-                    {/* Stat Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div className="stat-card">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Sessions</p>
-                                    <p className="text-3xl font-bold mt-1 dark:text-white">{stats.totalSessions}</p>
-                                </div>
-                                <div className="w-12 h-12 rounded-xl bg-primary-500/10 flex items-center justify-center">
-                                    <span className="text-2xl">📅</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="stat-card">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Avg Attendance</p>
-                                    <p className="text-3xl font-bold mt-1 dark:text-white">{stats.avgAttendance}%</p>
-                                </div>
-                                <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                                    <span className="text-2xl">📊</span>
+                    {/* Vibrant Gradient Stat Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8 stagger-children">
+                        {statCards.map((card, i) => (
+                            <div key={i} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-[1px] group hover:scale-[1.03] transition-all duration-300 ${card.shadowColor} shadow-lg hover:shadow-xl`}>
+                                <div className={`bg-white dark:bg-dark-800 rounded-[15px] p-5 h-full relative overflow-hidden`}>
+                                    {/* Colored accent corner */}
+                                    <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${card.gradient} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
+                                    <div className="flex items-center justify-between relative">
+                                        <div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{card.label}</p>
+                                            <p className={`text-3xl font-extrabold mt-1.5 bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
+                                                {card.value}
+                                            </p>
+                                        </div>
+                                        <div className={`w-14 h-14 rounded-2xl ${card.iconBg} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                                            <span className="text-2xl">{card.icon}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        ))}
+                    </div>
 
-                        <div className="stat-card">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Students</p>
-                                    <p className="text-3xl font-bold mt-1 dark:text-white">{stats.totalStudents}</p>
-                                </div>
-                                <div className="w-12 h-12 rounded-xl bg-accent-500/10 flex items-center justify-center">
-                                    <span className="text-2xl">👥</span>
-                                </div>
+                    {/* Semester Progress - Colorful */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] mb-8 animate-slide-up">
+                        <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
+                            <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-purple-200 to-pink-200 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full blur-3xl"></div>
+                            <div className="flex justify-between items-center mb-3 relative">
+                                <h3 className="font-bold dark:text-white flex items-center gap-2">
+                                    <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm">📈</span>
+                                    Semester Progress
+                                </h3>
+                                <span className="text-sm font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{stats.semesterProgress}%</span>
                             </div>
-                        </div>
-
-                        <div className="stat-card">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Below 75%</p>
-                                    <p className="text-3xl font-bold mt-1 text-red-500">{stats.belowThresholdCount}</p>
-                                </div>
-                                <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center">
-                                    <span className="text-2xl">⚠️</span>
+                            <div className="relative h-4 bg-gray-100 dark:bg-dark-600 rounded-full overflow-hidden">
+                                <div
+                                    className="absolute h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-all duration-1000 ease-out"
+                                    style={{ width: `${Math.min(stats.semesterProgress, 100)}%` }}
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent" style={{ animation: 'shimmer 2s infinite' }}></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Semester Progress */}
-                    <div className="glass-card-solid p-6 mb-8">
-                        <h3 className="font-semibold dark:text-white mb-3">Semester Progress</h3>
-                        <div className="relative h-3 bg-gray-200 dark:bg-dark-600 rounded-full overflow-hidden">
-                            <div
-                                className="absolute h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full transition-all duration-1000"
-                                style={{ width: `${Math.min(stats.semesterProgress, 100)}%` }}
-                            ></div>
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{stats.semesterProgress}% complete</p>
-                    </div>
-
-                    {/* Daily Chart */}
+                    {/* Daily Chart - Colorful */}
                     {chartData.length > 0 && (
-                        <div className="glass-card-solid p-6 mb-8">
-                            <h3 className="font-semibold dark:text-white mb-4">Daily Attendance Trend</h3>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <AreaChart data={chartData}>
-                                    <defs>
-                                        <linearGradient id="colorPercent" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#667eea" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#667eea" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                                    <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
-                                    <YAxis stroke="#9ca3af" fontSize={12} domain={[0, 100]} />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px', color: '#fff' }}
-                                    />
-                                    <Area type="monotone" dataKey="percentage" stroke="#667eea" strokeWidth={2} fill="url(#colorPercent)" name="Attendance %" />
-                                </AreaChart>
-                            </ResponsiveContainer>
+                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 p-[1px] mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                            <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
+                                <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-blue-200 to-cyan-200 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-full blur-3xl"></div>
+                                <h3 className="font-bold dark:text-white mb-5 flex items-center gap-2 relative">
+                                    <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white text-sm">📈</span>
+                                    Daily Attendance Trend
+                                </h3>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <AreaChart data={chartData}>
+                                        <defs>
+                                            <linearGradient id="colorPercent" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#6366f1" stopOpacity={0.02} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                                        <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#9ca3af" fontSize={12} domain={[0, 100]} tickLine={false} axisLine={false} />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: '#fff',
+                                                border: '2px solid #6366f1',
+                                                borderRadius: '12px',
+                                                color: '#1f2937',
+                                                boxShadow: '0 10px 30px rgba(99,102,241,0.15)'
+                                            }}
+                                        />
+                                        <Area type="monotone" dataKey="percentage" stroke="#6366f1" strokeWidth={3} fill="url(#colorPercent)" name="Attendance %"
+                                            dot={{ r: 4, fill: '#6366f1', strokeWidth: 3, stroke: '#fff' }}
+                                            activeDot={{ r: 7, strokeWidth: 0, fill: '#6366f1' }} />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     )}
 
-                    {/* Student Stats Table */}
-                    <div className="glass-card-solid p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-semibold dark:text-white">Student-wise Summary</h3>
-                            <button
-                                onClick={() => navigate('/teacher/reports')}
-                                className="btn-secondary text-sm px-4 py-2"
-                            >
-                                Full Report →
-                            </button>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b border-gray-200 dark:border-dark-600">
-                                        <th className="text-left py-3 px-4 text-gray-500 dark:text-gray-400 font-medium">Roll No</th>
-                                        <th className="text-left py-3 px-4 text-gray-500 dark:text-gray-400 font-medium">Name</th>
-                                        <th className="text-center py-3 px-4 text-gray-500 dark:text-gray-400 font-medium">Present</th>
-                                        <th className="text-center py-3 px-4 text-gray-500 dark:text-gray-400 font-medium">Total</th>
-                                        <th className="text-center py-3 px-4 text-gray-500 dark:text-gray-400 font-medium">%</th>
-                                        <th className="text-center py-3 px-4 text-gray-500 dark:text-gray-400 font-medium">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {stats.studentStats?.map((s) => (
-                                        <tr key={s._id} className="border-b border-gray-100 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
-                                            <td className="py-3 px-4 font-mono text-xs dark:text-gray-300">{s.rollNumber}</td>
-                                            <td className="py-3 px-4 dark:text-white">{s.name}</td>
-                                            <td className="py-3 px-4 text-center dark:text-gray-300">{s.presentCount}</td>
-                                            <td className="py-3 px-4 text-center dark:text-gray-300">{s.totalSessions}</td>
-                                            <td className="py-3 px-4 text-center font-semibold">
-                                                <span className={s.percentage >= 75 ? 'text-green-500' : s.percentage >= 65 ? 'text-yellow-500' : 'text-red-500'}>
-                                                    {s.percentage}%
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-4 text-center">
-                                                {s.warningLevel ? (
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.warningLevel === 'Critical' ? 'bg-red-500/10 text-red-500' : 'bg-yellow-500/10 text-yellow-500'
-                                                        }`}>
-                                                        {s.warningLevel}
-                                                    </span>
-                                                ) : (
-                                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500">Good</span>
-                                                )}
-                                            </td>
+                    {/* Student Stats Table - Colorful */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 to-purple-400 p-[1px] animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                        <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
+                            <div className="flex justify-between items-center mb-5">
+                                <h3 className="font-bold dark:text-white flex items-center gap-2">
+                                    <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-violet-500 to-purple-400 flex items-center justify-center text-white text-sm">👥</span>
+                                    Student-wise Summary
+                                </h3>
+                                <button
+                                    onClick={() => navigate('/teacher/reports')}
+                                    className="bg-gradient-to-r from-violet-500 to-purple-500 text-white text-sm px-5 py-2 rounded-xl font-semibold shadow-md shadow-purple-500/20 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                                >
+                                    Full Report
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div className="overflow-x-auto rounded-xl">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20">
+                                            <th className="text-left py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">Roll No</th>
+                                            <th className="text-left py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">Name</th>
+                                            <th className="text-center py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">Present</th>
+                                            <th className="text-center py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">Total</th>
+                                            <th className="text-center py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">%</th>
+                                            <th className="text-center py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">Status</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 dark:divide-dark-700">
+                                        {stats.studentStats?.map((s, idx) => (
+                                            <tr key={s._id} className="hover:bg-violet-50/50 dark:hover:bg-violet-900/10 transition-colors duration-200">
+                                                <td className="py-3.5 px-4 font-mono text-xs text-gray-600 dark:text-gray-300">{s.rollNumber}</td>
+                                                <td className="py-3.5 px-4 dark:text-white font-medium">{s.name}</td>
+                                                <td className="py-3.5 px-4 text-center">
+                                                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                                                        {s.presentCount}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3.5 px-4 text-center dark:text-gray-300">{s.totalSessions}</td>
+                                                <td className="py-3.5 px-4 text-center">
+                                                    <span className={`font-extrabold ${s.percentage >= 75 ? 'text-emerald-500' : s.percentage >= 65 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                                        {s.percentage}%
+                                                    </span>
+                                                </td>
+                                                <td className="py-3.5 px-4 text-center">
+                                                    {s.warningLevel ? (
+                                                        <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold ${s.warningLevel === 'Critical'
+                                                            ? 'bg-gradient-to-r from-rose-100 to-red-100 dark:from-rose-900/30 dark:to-red-900/30 text-rose-600 dark:text-rose-400'
+                                                            : 'bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-600 dark:text-amber-400'
+                                                            }`}>
+                                                            {s.warningLevel === 'Critical' ? '🔴' : '🟡'} {s.warningLevel}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-600 dark:text-emerald-400">
+                                                            🟢 Good
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </>

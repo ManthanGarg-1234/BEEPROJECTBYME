@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const generateQRToken = (sessionId) => {
     return {
         token: `${sessionId}_${uuidv4()}_${Date.now()}`,
-        expiresAt: new Date(Date.now() + 30 * 1000) // 30 seconds
+        expiresAt: new Date(Date.now() + 60 * 1000) // 60 seconds
     };
 };
 

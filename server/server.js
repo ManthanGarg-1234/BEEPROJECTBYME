@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const { Server } = require('socket.io');
+const path = require('path');
 const connectDB = require('./config/db');
 const { initSocketHandler } = require('./utils/socketHandler');
 const { initCronJobs } = require('./utils/cronJobs');
@@ -69,6 +70,19 @@ app.use('/api/analytics', require('./routes/analytics'));
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Serve uploaded files (profile photos etc.)
+const uploadsPath = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsPath));
+
+// Serve static frontend files in production/ngrok mode
+const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
+app.use(express.static(clientDistPath));
+
+// Catch-all route to serve React app for client-side routing
+app.get('*', (req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
 // Error handling middleware

@@ -43,6 +43,10 @@ const userSchema = new mongoose.Schema({
     lastWarningSentAt: {
         type: Date,
         default: null
+    },
+    profilePhoto: {
+        type: String,
+        default: null
     }
 }, {
     timestamps: true

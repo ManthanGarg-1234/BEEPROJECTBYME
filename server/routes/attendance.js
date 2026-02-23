@@ -23,6 +23,8 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
         const { qrToken, latitude, longitude, deviceId } = req.body;
         const studentId = req.user._id;
 
+        console.log(`[ATTENDANCE DEBUG] Student: ${req.user.name} (${studentId}), Device: ${deviceId}, Location: ${latitude}, ${longitude}`);
+
         // 1. Find active session by QR token
         const session = await Session.findOne({ qrToken, isActive: true });
 
@@ -30,22 +32,26 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             // Check if token exists but is expired
             const expiredSession = await Session.findOne({ qrToken });
             if (expiredSession) {
+                console.log(`[ATTENDANCE DEBUG] REJECTED: Expired QR for ${req.user.name}`);
                 await logSuspicious(studentId, expiredSession._id, 'EXPIRED_QR', deviceId, { latitude, longitude });
                 return res.status(400).json({ message: 'QR code has expired. Wait for refresh.' });
             }
 
+            console.log(`[ATTENDANCE DEBUG] REJECTED: Invalid QR for ${req.user.name}`);
             await logSuspicious(studentId, null, 'INVALID_QR', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'Invalid QR code' });
         }
 
         // 2. Check QR expiry
         if (new Date() > new Date(session.qrExpiresAt)) {
+            console.log(`[ATTENDANCE DEBUG] REJECTED: QR expired (time) for ${req.user.name}`);
             await logSuspicious(studentId, session._id, 'EXPIRED_QR', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'QR code has expired. Wait for refresh.' });
         }
 
         // 3. Check if attendance window has closed
         if (new Date() > new Date(session.attendanceWindowEnd)) {
+            console.log(`[ATTENDANCE DEBUG] REJECTED: Window closed for ${req.user.name}`);
             await logSuspicious(studentId, session._id, 'WINDOW_CLOSED', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'Attendance window has closed' });
         }
@@ -56,6 +62,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             student: studentId
         });
         if (existingAttendance) {
+            console.log(`[ATTENDANCE DEBUG] REJECTED: Duplicate attendance for ${req.user.name}`);
             await logSuspicious(studentId, session._id, 'DUPLICATE_ATTENDANCE', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'Attendance already marked for this session' });
         }
@@ -66,6 +73,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             deviceId
         });
         if (deviceUsed) {
+            console.log(`[ATTENDANCE DEBUG] REJECTED: Duplicate device for ${req.user.name}, device: ${deviceId}`);
             await logSuspicious(studentId, session._id, 'DUPLICATE_DEVICE', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'This device has already been used to mark attendance in this session' });
         }
@@ -79,6 +87,9 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             longitude,
             radiusMeters
         );
+
+        console.log(`[ATTENDANCE DEBUG] GPS check for ${req.user.name}: distance=${gpsResult.distance}m, limit=${radiusMeters}m, valid=${gpsResult.isValid}`);
+        console.log(`[ATTENDANCE DEBUG] Session location: ${session.location.latitude}, ${session.location.longitude} | Student location: ${latitude}, ${longitude}`);
 
         if (!gpsResult.isValid) {
             await logSuspicious(studentId, session._id, 'GPS_OUT_OF_RANGE', deviceId, { latitude, longitude },
