@@ -12,8 +12,19 @@ const registerValidation = [
         .trim()
         .notEmpty().withMessage('Email is required')
         .isEmail().withMessage('Invalid email format')
-        .matches(new RegExp(`^\\d{10}@${COLLEGE_DOMAIN.replace('.', '\\.')}$`))
-        .withMessage(`Email must be in format: rollNumber@${COLLEGE_DOMAIN}`),
+        .custom((value, { req }) => {
+            const domainPattern = new RegExp(`^[^@\s]+@${COLLEGE_DOMAIN.replace('.', '\.')}$`);
+            if (!domainPattern.test(value)) {
+                throw new Error(`Email must be at ${COLLEGE_DOMAIN}`);
+            }
+            if (req.body?.role === 'student') {
+                const studentPattern = new RegExp(`^\d{10}@${COLLEGE_DOMAIN.replace('.', '\.')}$`);
+                if (!studentPattern.test(value)) {
+                    throw new Error(`Student email must be in format: rollNumber@${COLLEGE_DOMAIN}`);
+                }
+            }
+            return true;
+        }),
 
     body('password')
         .notEmpty().withMessage('Password is required')
