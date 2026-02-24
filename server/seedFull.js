@@ -65,6 +65,7 @@ function pastWeekdays(n) {
 
 async function main() {
     const client = new MongoClient(MONGO_URI);
+    console.log(`🔌 Connecting to DB: ${MONGO_URI.includes('127.0.0.1') || MONGO_URI.includes('localhost') ? 'Localhost' : 'Cloud Atlas'}`);
     await client.connect();
     const db = client.db();
     console.log('✅ MongoDB connected (native driver)');

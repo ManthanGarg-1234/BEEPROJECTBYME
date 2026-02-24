@@ -42,9 +42,11 @@ const Login = () => {
         <div className="min-h-screen flex">
             {/* Left Side - Illustration Panel */}
             <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 items-center justify-center overflow-hidden">
-                <img
-                    src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80"
-                    alt=""
+                <video
+                    src="https://assets.mixkit.co/videos/preview/mixkit-working-on-a-laptop-in-an-office-environment-3246-large.mp4"
+                    autoPlay
+                    loop
+                    muted
                     className="absolute inset-0 w-full h-full object-cover opacity-20"
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-transparent to-lime-500/10"></div>
