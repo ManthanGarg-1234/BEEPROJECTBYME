@@ -9,17 +9,12 @@ const api = axios.create({
     }
 });
 
-// Request interceptor - attach JWT + bypass ngrok browser warning page
+// Request interceptor - attach JWT token
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-        }
-        // Prevents ngrok from returning its interstitial HTML warning page
-        // for API requests when using a tunnel URL during development.
-        if (API_URL.includes('ngrok')) {
-            config.headers['ngrok-skip-browser-warning'] = 'true';
         }
         return config;
     },

@@ -28,18 +28,9 @@ const allowedOrigins = new Set(
         .map(normalizeOrigin)
 );
 
-// VS Code Dev Tunnel pattern
-const DEVTUNNEL_PATTERN = /^https?:\/\/.*\.devtunnels\.ms$/;
-// Ngrok tunnel pattern
-const NGROK_PATTERN = /^https?:\/\/[a-zA-Z0-9-]+\.ngrok(-free)?\.app$/;
-
 const isOriginAllowed = (origin) => {
     if (!origin) return true;
     if (allowedOrigins.has(normalizeOrigin(origin))) return true;
-    // Allow Tunnels in development
-    if (process.env.NODE_ENV !== 'production') {
-        if (DEVTUNNEL_PATTERN.test(origin) || NGROK_PATTERN.test(origin)) return true;
-    }
     return false;
 };
 
