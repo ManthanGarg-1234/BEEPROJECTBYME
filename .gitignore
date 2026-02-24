@@ -9,3 +9,5 @@ client/dist/
 client/build/
 
 .DS_Store
+server/uploads/profiles/*
+!server/uploads/profiles/.gitkeep

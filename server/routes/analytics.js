@@ -335,4 +335,211 @@ router.get('/class-daily/:classId', auth, authorize('student'), async (req, res)
     }
 });
 
+// @route   GET /api/analytics/group-overview
+// @desc    Summary matrix: all groups × all subjects (aggregation-powered, fast)
+// @access  Teacher
+router.get('/group-overview', auth, authorize('teacher'), async (req, res) => {
+    try {
+        const GROUPS = ['G18', 'G19', 'G20', 'G21', 'G22'];
+        const SUBJECTS = [
+            { code: 'CN',     name: 'Computer Networks' },
+            { code: 'BE',     name: 'Backend Engineering' },
+            { code: 'DSOOPS', name: 'DSOOPS' },
+            { code: 'LINUX',  name: 'Linux Administration' },
+            { code: 'DM',     name: 'Discrete Mathematics' },
+        ];
+
+        // Fetch all 25 classes at once
+        const allClasses = await Class.find({
+            classId: { $in: SUBJECTS.flatMap(s => GROUPS.map(g => `${s.code}-${g}`)) }
+        }).lean();
+
+        const classMap = {};
+        allClasses.forEach(c => { classMap[c.classId] = c; });
+
+        // One aggregation: count by class + status
+        const classIds = allClasses.map(c => c._id);
+        const sessionDocs = await Session.find({ class: { $in: classIds } }).lean();
+        const sessionMap = {}; // classId_str → [sessionIds]
+        sessionDocs.forEach(s => {
+            const k = s.class.toString();
+            if (!sessionMap[k]) sessionMap[k] = [];
+            sessionMap[k].push(s._id);
+        });
+
+        const attAgg = await Attendance.aggregate([
+            { $match: { class: { $in: classIds } } },
+            { $group: { _id: { class: '$class', status: '$status' }, count: { $sum: 1 } } }
+        ]);
+
+        // Map: classObjectId → { Present, Late, Absent }
+        const attMap = {};
+        attAgg.forEach(({ _id, count }) => {
+            const k = _id.class.toString();
+            if (!attMap[k]) attMap[k] = { Present: 0, Late: 0, Absent: 0 };
+            attMap[k][_id.status] = count;
+        });
+
+        const matrix = {};
+        for (const sub of SUBJECTS) {
+            matrix[sub.code] = {};
+            for (const group of GROUPS) {
+                const cid = `${sub.code}-${group}`;
+                const cls = classMap[cid];
+                if (!cls) { matrix[sub.code][group] = null; continue; }
+                const k = cls._id.toString();
+                const totalSessions = (sessionMap[k] || []).length;
+                const totalStudents = cls.students.length;
+                const present = attMap[k]?.Present || 0;
+                const late    = attMap[k]?.Late    || 0;
+                const totalSlots = totalStudents * totalSessions;
+                const absent  = totalSlots - present - late;
+                const pct     = totalSlots > 0 ? Math.round(((present + late) / totalSlots) * 1000) / 10 : 0;
+                matrix[sub.code][group] = { present, late, absent, total: totalSlots, totalSessions, totalStudents, pct };
+            }
+        }
+
+        res.json({ subjects: SUBJECTS, groups: GROUPS, matrix });
+    } catch (err) {
+        console.error('group-overview error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/analytics/group-subject-daily/:subjectCode
+// @desc    Per-group daily attendance stats (aggregation-powered)
+// @access  Teacher
+router.get('/group-subject-daily/:subjectCode', auth, authorize('teacher'), async (req, res) => {
+    try {
+        const GROUPS = ['G18', 'G19', 'G20', 'G21', 'G22'];
+        const subjectCode = req.params.subjectCode.toUpperCase();
+
+        const classIds = GROUPS.map(g => `${subjectCode}-${g}`);
+        const classDocs = await Class.find({ classId: { $in: classIds } }).lean();
+        const classMap = {};
+        classDocs.forEach(c => { classMap[c.classId] = c; });
+
+        const objIds = classDocs.map(c => c._id);
+        const sessions = await Session.find({ class: { $in: objIds } }).sort({ startTime: 1 }).lean();
+
+        // Map session._id → { classObjId, date }
+        const sessInfo = {};
+        sessions.forEach(s => {
+            sessInfo[s._id.toString()] = {
+                classId: s.class.toString(),
+                date: s.startTime.toISOString().split('T')[0],
+            };
+        });
+
+        // Aggregate attendance by session + status
+        const sessIds = sessions.map(s => s._id);
+        const attAgg = await Attendance.aggregate([
+            { $match: { session: { $in: sessIds } } },
+            { $group: { _id: { session: '$session', status: '$status' }, count: { $sum: 1 } } }
+        ]);
+
+        // Build map: sessionId → { Present, Late }
+        const attBySess = {};
+        attAgg.forEach(({ _id, count }) => {
+            const k = _id.session.toString();
+            if (!attBySess[k]) attBySess[k] = { Present: 0, Late: 0 };
+            attBySess[k][_id.status] = count;
+        });
+
+        // Build per-class daily arrays
+        // classObjId → classId string
+        const objToClassId = {};
+        classDocs.forEach(c => { objToClassId[c._id.toString()] = c.classId; });
+
+        const result = {};
+        const dateSet = new Set();
+        GROUPS.forEach(g => { result[g] = []; });
+
+        sessions.forEach(sess => {
+            const sk = sess._id.toString();
+            const classObjId = sess.class.toString();
+            const classIdStr = objToClassId[classObjId];
+            const group = classIdStr?.split('-')[1];
+            if (!group) return;
+            const cls = classMap[classIdStr];
+            if (!cls) return;
+            const totalStudents = cls.students.length;
+            const present = attBySess[sk]?.Present || 0;
+            const late    = attBySess[sk]?.Late    || 0;
+            const absent  = totalStudents - present - late;
+            const pct     = totalStudents > 0 ? Math.round(((present + late) / totalStudents) * 1000) / 10 : 0;
+            const dateStr  = sess.startTime.toISOString().split('T')[0];
+            dateSet.add(dateStr);
+            result[group].push({ date: dateStr, present, late, absent, total: totalStudents, pct });
+        });
+
+        const dates = Array.from(dateSet).sort();
+        res.json({ subjectCode, groups: GROUPS, dates, daily: result });
+    } catch (err) {
+        console.error('group-subject-daily error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/analytics/group-day-pies/:subjectCode/:date
+// @desc    Pie breakdown for each group on a specific date
+// @access  Teacher
+router.get('/group-day-pies/:subjectCode/:date', auth, authorize('teacher'), async (req, res) => {
+    try {
+        const GROUPS = ['G18', 'G19', 'G20', 'G21', 'G22'];
+        const subjectCode = req.params.subjectCode.toUpperCase();
+        const dateStr = req.params.date;
+        const startOfDay = new Date(dateStr + 'T00:00:00.000Z');
+        const endOfDay   = new Date(dateStr + 'T23:59:59.999Z');
+
+        const classIds = GROUPS.map(g => `${subjectCode}-${g}`);
+        const classDocs = await Class.find({ classId: { $in: classIds } }).lean();
+        const classMap = {};
+        classDocs.forEach(c => { classMap[c.classId] = c; });
+
+        const objIds = classDocs.map(c => c._id);
+        const sessions = await Session.find({
+            class: { $in: objIds },
+            startTime: { $gte: startOfDay, $lte: endOfDay }
+        }).lean();
+
+        // session class._id → session
+        const sessByClass = {};
+        sessions.forEach(s => { sessByClass[s.class.toString()] = s; });
+
+        const sessIds = sessions.map(s => s._id);
+        const attAgg = sessIds.length > 0 ? await Attendance.aggregate([
+            { $match: { session: { $in: sessIds } } },
+            { $group: { _id: { session: '$session', status: '$status' }, count: { $sum: 1 } } }
+        ]) : [];
+
+        const attBySess = {};
+        attAgg.forEach(({ _id, count }) => {
+            const k = _id.session.toString();
+            if (!attBySess[k]) attBySess[k] = {};
+            attBySess[k][_id.status] = count;
+        });
+
+        const pies = {};
+        for (const group of GROUPS) {
+            const cls = classMap[`${subjectCode}-${group}`];
+            if (!cls) { pies[group] = null; continue; }
+            const sess = sessByClass[cls._id.toString()];
+            if (!sess) { pies[group] = null; continue; }
+            const sk = sess._id.toString();
+            const totalStudents = cls.students.length;
+            const present = attBySess[sk]?.Present || 0;
+            const late    = attBySess[sk]?.Late    || 0;
+            const absent  = totalStudents - present - late;
+            const pct     = totalStudents > 0 ? Math.round(((present + late) / totalStudents) * 1000) / 10 : 0;
+            pies[group] = { present, late, absent, total: totalStudents, pct };
+        }
+
+        res.json({ subjectCode, date: dateStr, groups: GROUPS, pies });
+    } catch (err) {
+        console.error('group-day-pies error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 module.exports = router;
