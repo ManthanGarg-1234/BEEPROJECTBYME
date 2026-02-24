@@ -28,24 +28,9 @@ const allowedOrigins = new Set(
         .map(normalizeOrigin)
 );
 
-// Ngrok tunnel pattern — only active outside production
-const NGROK_PATTERN = /^https?:\/\/[a-zA-Z0-9-]+\.ngrok(-free)?\.app$/;
-const NGROK_LEGACY_PATTERN = /^https?:\/\/[a-zA-Z0-9-]+\.ngrok\.io$/;
-
 const isOriginAllowed = (origin) => {
-    if (!origin) {
-        return true;
-    }
-    if (allowedOrigins.has(normalizeOrigin(origin))) {
-        return true;
-    }
-    // Dynamically allow any ngrok tunnel in non-production environments
-    // so the server does not need a restart when the ngrok URL changes.
-    if (process.env.NODE_ENV !== 'production') {
-        if (NGROK_PATTERN.test(origin) || NGROK_LEGACY_PATTERN.test(origin)) {
-            return true;
-        }
-    }
+    if (!origin) return true;
+    if (allowedOrigins.has(normalizeOrigin(origin))) return true;
     return false;
 };
 
