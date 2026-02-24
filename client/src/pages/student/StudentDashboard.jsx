@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../api';
+import { useAuth } from '../../context/AuthContext';
 
 const useAnimatedCounter = (end, duration = 1000) => {
     const [count, setCount] = useState(0);
@@ -27,6 +29,12 @@ const StudentDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [selectedClassId, setSelectedClassId] = useState('');
     const [focusClassId, setFocusClassId] = useState('');
+    const navigate = useNavigate();
+    const { user } = useAuth();
+
+    const photoUrl = user?.profilePhoto
+        ? `${import.meta.env.VITE_API_URL || ''}/uploads/profiles/${user.profilePhoto}`
+        : '';
 
     useEffect(() => {
         const fetchDashboard = async () => {
@@ -168,7 +176,7 @@ const StudentDashboard = () => {
                         <div className="grid gap-2">
                             <button
                                 type="button"
-                                onClick={() => setFocusClassId(selectedClass.classId)}
+                                onClick={() => navigate(`/student/reports?classId=${selectedClass.classId}`)}
                                 className="w-full rounded-xl border border-slate-700/60 bg-slate-900/60 px-3 py-2.5 text-sm font-semibold text-slate-200 hover:border-cyan-300/60 transition-all duration-300"
                             >
                                 View Attendance Report
@@ -210,13 +218,30 @@ const StudentDashboard = () => {
 
                 <div>
                     <div className="mb-8 animate-fade-in">
-                        <div className="flex items-center gap-3 mb-1">
+                        <div className="flex items-center justify-between gap-4 mb-1">
+                            <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
                                 <span className="text-white text-lg">🎓</span>
                             </div>
                             <h1 className="text-3xl font-extrabold bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
                                 My Attendance
                             </h1>
+                            </div>
+                            <div className="flex items-center gap-3 rounded-2xl border border-slate-200/20 bg-white/70 dark:bg-dark-800/70 px-3 py-2 shadow-lg shadow-blue-500/5">
+                                <div className="w-11 h-11 rounded-xl overflow-hidden border border-cyan-200/60 bg-slate-900/40">
+                                    {photoUrl ? (
+                                        <img src={photoUrl} alt={user?.name || 'Student'} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-white text-sm font-bold">
+                                            {user?.name?.charAt(0)?.toUpperCase() || 'S'}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="hidden sm:block">
+                                    <p className="text-xs uppercase tracking-[0.2em] text-cyan-500/80">Student</p>
+                                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{user?.name || 'Student'}</p>
+                                </div>
+                            </div>
                         </div>
                         <p className="text-gray-500 dark:text-gray-400 ml-[52px]">
                             Welcome back, <span className="font-semibold text-gray-700 dark:text-gray-200">{data.student.name}</span> 👋

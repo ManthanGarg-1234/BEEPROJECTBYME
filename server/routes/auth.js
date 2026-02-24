@@ -10,6 +10,7 @@ const { registerValidation, loginValidation, changePasswordValidation } = requir
 
 const router = express.Router();
 
+
 // Multer config for profile photos
 const uploadsDir = path.join(__dirname, '..', 'uploads', 'profiles');
 if (!fs.existsSync(uploadsDir)) {
@@ -137,6 +138,7 @@ router.post('/login', loginValidation, async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 // @route   POST /api/auth/change-password
 // @desc    Change password

@@ -72,6 +72,9 @@ const Navbar = () => {
                                 <NavLink to="/student/scan" className={linkClass}>
                                     <span className="flex items-center gap-1.5">📷 Mark Attendance</span>
                                 </NavLink>
+                                <NavLink to="/student/reports" className={linkClass}>
+                                    <span className="flex items-center gap-1.5">📈 Reports</span>
+                                </NavLink>
                             </>
                         )}
                     </div>
@@ -156,6 +159,7 @@ const Navbar = () => {
                                 <>
                                     <NavLink to="/student/dashboard" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📊 Dashboard</NavLink>
                                     <NavLink to="/student/scan" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📷 Mark Attendance</NavLink>
+                                    <NavLink to="/student/reports" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📈 Reports</NavLink>
                                 </>
                             )}
                         </div>

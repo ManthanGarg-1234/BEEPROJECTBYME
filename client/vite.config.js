@@ -6,11 +6,7 @@ export default defineConfig({
     server: {
         port: 5173,
         host: true,
-        allowedHosts: ['charlena-filmiest-langston.ngrok-free.dev'],
-        hmr: {
-            host: 'charlena-filmiest-langston.ngrok-free.dev',
-            clientPort: 443
-        },
+        allowedHosts: true,
         proxy: {
             '/api': {
                 target: 'http://localhost:5000',

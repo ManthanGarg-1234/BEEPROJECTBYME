@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -15,10 +16,55 @@ import AttendanceReport from './pages/teacher/AttendanceReport';
 import EvaluationPanel from './pages/teacher/EvaluationPanel';
 import ManualAttendance from './pages/teacher/ManualAttendance';
 import StudentDashboard from './pages/student/StudentDashboard';
+import StudentAttendanceReport from './pages/student/AttendanceReport';
 import ScanQR from './pages/student/ScanQR';
 
 function App() {
     const { loading, isAuthenticated, user } = useAuth();
+    const [reducedMotion, setReducedMotion] = useState(false);
+    const [showVideo, setShowVideo] = useState(true);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+
+        const evaluatePerformanceMode = () => {
+            const prefersReduced = mediaQuery.matches;
+            const saveData = !!connection?.saveData;
+            const effectiveType = connection?.effectiveType || '';
+            const slowConnection = effectiveType.includes('2g');
+            const lowCPU = Number.isFinite(navigator.hardwareConcurrency) && navigator.hardwareConcurrency <= 4;
+            const lowMemory = Number.isFinite(navigator.deviceMemory) && navigator.deviceMemory <= 4;
+            const shouldReduce = prefersReduced || saveData || slowConnection || lowCPU || lowMemory;
+
+            setReducedMotion(shouldReduce);
+            setShowVideo(!shouldReduce);
+        };
+
+        evaluatePerformanceMode();
+
+        if (mediaQuery.addEventListener) {
+            mediaQuery.addEventListener('change', evaluatePerformanceMode);
+        } else {
+            mediaQuery.addListener(evaluatePerformanceMode);
+        }
+
+        if (connection?.addEventListener) {
+            connection.addEventListener('change', evaluatePerformanceMode);
+        }
+
+        return () => {
+            if (mediaQuery.removeEventListener) {
+                mediaQuery.removeEventListener('change', evaluatePerformanceMode);
+            } else {
+                mediaQuery.removeListener(evaluatePerformanceMode);
+            }
+
+            if (connection?.removeEventListener) {
+                connection.removeEventListener('change', evaluatePerformanceMode);
+            }
+        };
+    }, []);
 
     if (loading) return <LoadingSpinner />;
 
@@ -29,19 +75,21 @@ function App() {
     };
 
     return (
-        <div className="app-shell">
+        <div className={`app-shell${reducedMotion ? ' app-shell--reduced' : ''}`}>
             <div className="app-bg" aria-hidden="true">
-                <video
-                    className="app-bg-video"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="metadata"
-                    poster="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1600&q=80"
-                >
-                    <source src="https://storage.coverr.co/videos/coverr-working-on-a-laptop-8530/1080p.mp4" type="video/mp4" />
-                </video>
+                {showVideo && (
+                    <video
+                        className="app-bg-video"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        preload="metadata"
+                        poster="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1600&q=80"
+                    >
+                        <source src="https://storage.coverr.co/videos/coverr-working-on-a-laptop-8530/1080p.mp4" type="video/mp4" />
+                    </video>
+                )}
                 <div className="app-bg-grid"></div>
                 <div className="app-bg-orb app-bg-orb--one"></div>
                 <div className="app-bg-orb app-bg-orb--two"></div>
@@ -91,6 +139,9 @@ function App() {
                 } />
                 <Route path="/student/scan" element={
                     <ProtectedRoute role="student"><ScanQR /></ProtectedRoute>
+                } />
+                <Route path="/student/reports" element={
+                    <ProtectedRoute role="student"><StudentAttendanceReport /></ProtectedRoute>
                 } />
 
                 {/* Default redirect */}

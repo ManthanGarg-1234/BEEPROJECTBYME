@@ -22,6 +22,10 @@ const isOriginAllowed = (origin) => {
     if (!origin) {
         return true;
     }
+    // Allow any trycloudflare.com subdomain for dev tunneling
+    if (origin.endsWith('.trycloudflare.com')) {
+        return true;
+    }
     return allowedOrigins.has(normalizeOrigin(origin));
 };
 

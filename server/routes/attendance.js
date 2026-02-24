@@ -78,28 +78,35 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             return res.status(400).json({ message: 'This device has already been used to mark attendance in this session' });
         }
 
-        // 6. GPS validation
-        const radiusMeters = parseInt(process.env.GPS_RADIUS_METERS) || 100;
-        const accuracyMeters = Number.isFinite(Number(accuracy)) ? Number(accuracy) : 0;
-        const teacherAccuracy = Number.isFinite(Number(session.location?.accuracy)) ? Number(session.location.accuracy) : 0;
-        const effectiveRadius = Math.min(radiusMeters + accuracyMeters + teacherAccuracy, 500);
-        const gpsResult = isWithinRadius(
-            session.location.latitude,
-            session.location.longitude,
-            latitude,
-            longitude,
-            effectiveRadius
-        );
+        // 6. GPS validation (optional)
+        let gpsResult = { isValid: true, distance: 0 };
+        const enforceGps = String(process.env.GPS_ENFORCE || 'true').toLowerCase() !== 'false';
 
-        console.log(`[ATTENDANCE DEBUG] GPS check for ${req.user.name}: distance=${gpsResult.distance}m, limit=${effectiveRadius}m (base ${radiusMeters}m, student acc ${accuracyMeters}m, teacher acc ${teacherAccuracy}m), valid=${gpsResult.isValid}`);
-        console.log(`[ATTENDANCE DEBUG] Session location: ${session.location.latitude}, ${session.location.longitude} | Student location: ${latitude}, ${longitude}`);
+        if (enforceGps) {
+            const radiusMeters = parseInt(process.env.GPS_RADIUS_METERS) || 100;
+            const accuracyMeters = Number.isFinite(Number(accuracy)) ? Number(accuracy) : 0;
+            const teacherAccuracy = Number.isFinite(Number(session.location?.accuracy)) ? Number(session.location.accuracy) : 0;
+            const effectiveRadius = radiusMeters + accuracyMeters + teacherAccuracy;
+            gpsResult = isWithinRadius(
+                session.location.latitude,
+                session.location.longitude,
+                latitude,
+                longitude,
+                effectiveRadius
+            );
 
-        if (!gpsResult.isValid) {
-            await logSuspicious(studentId, session._id, 'GPS_OUT_OF_RANGE', deviceId, { latitude, longitude },
-                `Distance: ${gpsResult.distance}m, Limit: ${radiusMeters}m`);
-            return res.status(400).json({
-                message: `You are too far from the classroom (${gpsResult.distance}m away, limit: ${effectiveRadius}m)`
-            });
+            console.log(`[ATTENDANCE DEBUG] GPS check for ${req.user.name}: distance=${gpsResult.distance}m, limit=${effectiveRadius}m (base ${radiusMeters}m, student acc ${accuracyMeters}m, teacher acc ${teacherAccuracy}m), valid=${gpsResult.isValid}`);
+            console.log(`[ATTENDANCE DEBUG] Session location: ${session.location.latitude}, ${session.location.longitude} | Student location: ${latitude}, ${longitude}`);
+
+            if (!gpsResult.isValid) {
+                await logSuspicious(studentId, session._id, 'GPS_OUT_OF_RANGE', deviceId, { latitude, longitude },
+                    `Distance: ${gpsResult.distance}m, Limit: ${radiusMeters}m`);
+                return res.status(400).json({
+                    message: `You are too far from the classroom (${gpsResult.distance}m away, limit: ${effectiveRadius}m)`
+                });
+            }
+        } else {
+            console.log(`[ATTENDANCE DEBUG] GPS check skipped for ${req.user.name} (GPS_ENFORCE=false)`);
         }
 
         // 7. Determine status based on time
@@ -121,7 +128,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
         }
 
         // Check for suspicious patterns
-        if (gpsResult.distance > effectiveRadius * 0.8) {
+        if (enforceGps && gpsResult.distance > (parseInt(process.env.GPS_RADIUS_METERS) || 100) * 0.8) {
             suspiciousFlag = true;
         }
 
