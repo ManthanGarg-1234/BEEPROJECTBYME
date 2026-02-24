@@ -12,17 +12,41 @@ const app = express();
 const server = http.createServer(app);
 
 const normalizeOrigin = (origin) => (origin || '').replace(/\/+$/, '');
-const clientOrigin = normalizeOrigin(process.env.CLIENT_URL) || 'http://localhost:5173';
-const allowedOrigins = new Set([
-    clientOrigin,
-    'http://localhost:5173'
-].map(normalizeOrigin));
+
+// In production: trust only CLIENT_URL (plus same-origin with no Origin header).
+// In development: fall back to localhost:5173 when CLIENT_URL is not set.
+const DEFAULT_DEV_CLIENT = 'http://localhost:5173';
+const clientOrigin = process.env.CLIENT_URL ? normalizeOrigin(process.env.CLIENT_URL) : null;
+
+const allowedOrigins = new Set(
+    [
+        clientOrigin,
+        // Allow Vite dev server only outside production
+        ...(process.env.NODE_ENV !== 'production' ? [DEFAULT_DEV_CLIENT] : [])
+    ]
+        .filter(Boolean)
+        .map(normalizeOrigin)
+);
+
+// Ngrok tunnel pattern — only active outside production
+const NGROK_PATTERN = /^https?:\/\/[a-zA-Z0-9-]+\.ngrok(-free)?\.app$/;
+const NGROK_LEGACY_PATTERN = /^https?:\/\/[a-zA-Z0-9-]+\.ngrok\.io$/;
 
 const isOriginAllowed = (origin) => {
     if (!origin) {
         return true;
     }
-    return allowedOrigins.has(normalizeOrigin(origin));
+    if (allowedOrigins.has(normalizeOrigin(origin))) {
+        return true;
+    }
+    // Dynamically allow any ngrok tunnel in non-production environments
+    // so the server does not need a restart when the ngrok URL changes.
+    if (process.env.NODE_ENV !== 'production') {
+        if (NGROK_PATTERN.test(origin) || NGROK_LEGACY_PATTERN.test(origin)) {
+            return true;
+        }
+    }
+    return false;
 };
 
 // Socket.io setup
