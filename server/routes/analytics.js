@@ -298,4 +298,41 @@ router.get('/student-dashboard', auth, authorize('student'), async (req, res) =>
     }
 });
 
+// @route   GET /api/analytics/class-daily/:classId
+// @desc    Get daily group attendance stats for a class (student-accessible)
+// @access  Student (must be enrolled)
+router.get('/class-daily/:classId', auth, authorize('student'), async (req, res) => {
+    try {
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() });
+        if (!classDoc) return res.status(404).json({ message: 'Class not found' });
+
+        // verify student is enrolled
+        const enrolled = classDoc.students.some(s => s.toString() === req.user._id.toString());
+        if (!enrolled) return res.status(403).json({ message: 'Not enrolled in this class' });
+
+        const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 });
+        const totalStudents = classDoc.students.length;
+
+        const daily = await Promise.all(sessions.map(async (session) => {
+            const present = await Attendance.countDocuments({ session: session._id, status: 'Present' });
+            const late = await Attendance.countDocuments({ session: session._id, status: 'Late' });
+            const absent = totalStudents - present - late;
+            const pct = totalStudents > 0 ? Math.round((present / totalStudents) * 1000) / 10 : 0;
+            return {
+                date: session.startTime.toISOString().split('T')[0],
+                present,
+                late,
+                absent,
+                total: totalStudents,
+                percentage: pct,
+            };
+        }));
+
+        res.json({ totalStudents, daily });
+    } catch (err) {
+        console.error('class-daily error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 module.exports = router;

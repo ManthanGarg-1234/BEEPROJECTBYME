@@ -32,6 +32,13 @@ const StudentDashboard = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
 
+    const quickNav = [
+        { label: 'Dashboard', path: '/student/dashboard', icon: '📊' },
+        { label: 'Subjects', path: '/student/subjects', icon: '📚' },
+        { label: 'Scan QR', path: '/student/scan', icon: '📷' },
+        { label: 'Reports', path: '/student/reports', icon: '📈' },
+    ];
+
     const photoUrl = user?.profilePhoto
         ? `${import.meta.env.VITE_API_URL || ''}/uploads/profiles/${user.profilePhoto}`
         : '';
@@ -70,8 +77,25 @@ const StudentDashboard = () => {
                             </div>
                             <div>
                                 <p className="text-xs uppercase tracking-[0.25em] text-cyan-200/80">Student Hub</p>
-                                <h2 className="text-lg font-bold text-white">My Subjects</h2>
+                                <h2 className="text-lg font-bold text-white">My Dashboard</h2>
                             </div>
+                        </div>
+
+                        <div className="space-y-3 mb-6">
+                            {quickNav.map((item) => (
+                                <button
+                                    key={item.path}
+                                    type="button"
+                                    onClick={() => navigate(item.path)}
+                                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white transition-all duration-300"
+                                >
+                                    <span className="flex items-center gap-2 text-sm font-medium">
+                                        <span className="text-lg">{item.icon}</span>
+                                        {item.label}
+                                    </span>
+                                    <span className="text-xs text-slate-400">→</span>
+                                </button>
+                            ))}
                         </div>
 
                         <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-4 text-sm text-slate-300">
@@ -145,10 +169,28 @@ const StudentDashboard = () => {
                         </div>
                         <div>
                             <p className="text-xs uppercase tracking-[0.25em] text-cyan-200/80">Student Hub</p>
-                            <h2 className="text-lg font-bold text-white">My Subjects</h2>
+                            <h2 className="text-lg font-bold text-white">My Dashboard</h2>
                         </div>
                     </div>
 
+                    <div className="space-y-3 mb-6">
+                        {quickNav.map((item) => (
+                            <button
+                                key={item.path}
+                                type="button"
+                                onClick={() => navigate(item.path)}
+                                className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white transition-all duration-300"
+                            >
+                                <span className="flex items-center gap-2 text-sm font-medium">
+                                    <span className="text-lg">{item.icon}</span>
+                                    {item.label}
+                                </span>
+                                <span className="text-xs text-slate-400">→</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    <h3 className="text-sm font-semibold text-slate-200 mb-3">My Subjects</h3>
                     <div className="space-y-2 mb-6">
                         {data.classes.map((cls) => (
                             <button
@@ -220,12 +262,12 @@ const StudentDashboard = () => {
                     <div className="mb-8 animate-fade-in">
                         <div className="flex items-center justify-between gap-4 mb-1">
                             <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                <span className="text-white text-lg">🎓</span>
-                            </div>
-                            <h1 className="text-3xl font-extrabold bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                My Attendance
-                            </h1>
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                    <span className="text-white text-lg">🎓</span>
+                                </div>
+                                <h1 className="text-3xl font-extrabold bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                    My Attendance
+                                </h1>
                             </div>
                             <div className="flex items-center gap-3 rounded-2xl border border-slate-200/20 bg-white/70 dark:bg-dark-800/70 px-3 py-2 shadow-lg shadow-blue-500/5">
                                 <div className="w-11 h-11 rounded-xl overflow-hidden border border-cyan-200/60 bg-slate-900/40">
