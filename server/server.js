@@ -76,7 +76,7 @@ app.get('/api/health', (req, res) => {
 const uploadsPath = path.join(__dirname, 'uploads');
 app.use('/uploads', express.static(uploadsPath));
 
-// Serve static frontend files in production/ngrok mode
+// Serve static frontend files in production mode
 const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(clientDistPath));
 
