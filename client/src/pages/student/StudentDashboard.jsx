@@ -1,28 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
-
-const useAnimatedCounter = (end, duration = 1000) => {
-    const [count, setCount] = useState(0);
-    const prevEnd = useRef(0);
-    useEffect(() => {
-        if (end === undefined || end === null) return;
-        const startVal = prevEnd.current;
-        prevEnd.current = end;
-        const startTime = Date.now();
-        const step = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.round(startVal + (end - startVal) * eased));
-            if (progress < 1) requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
-    }, [end, duration]);
-    return count;
-};
 
 const StudentDashboard = () => {
     const [data, setData] = useState(null);
@@ -257,7 +237,7 @@ const StudentDashboard = () => {
                 </aside>
 
                 <div>
-                    <div className="mb-8 animate-fade-in">
+                    <div className="mb-8">
                         <div className="flex items-center justify-between gap-4 mb-1">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -305,9 +285,9 @@ const StudentDashboard = () => {
 };
 
 const ClassCard = ({ cls, colors, isFocused }) => {
-    const animPercent = useAnimatedCounter(cls.percentage);
-    const animPresent = useAnimatedCounter(cls.presentCount);
-    const animTotal = useAnimatedCounter(cls.totalSessions);
+    const animPercent = cls.percentage;
+    const animPresent = cls.presentCount;
+    const animTotal = cls.totalSessions;
     const timeline = cls.attendanceTimeline || [];
     const recentTimeline = timeline.slice(-6).reverse();
     const summaryCounts = timeline.reduce(
@@ -346,8 +326,7 @@ const ClassCard = ({ cls, colors, isFocused }) => {
                                     fill="none" strokeWidth="3"
                                     strokeDasharray={`${animPercent}, 100`}
                                     stroke="white"
-                                    strokeLinecap="round"
-                                    className="transition-all duration-1000 ease-out" />
+                                    strokeLinecap="round" />
                             </svg>
                             <div className="absolute inset-0 flex items-center justify-center">
                                 <span className="text-sm font-extrabold text-white">{animPercent}%</span>
@@ -359,15 +338,15 @@ const ClassCard = ({ cls, colors, isFocused }) => {
                 {/* Stats */}
                 <div className="p-6">
                     <div className="grid grid-cols-3 gap-3 mb-5">
-                        <div className={`bg-gradient-to-br ${colors.light} dark:bg-emerald-900/10 rounded-xl p-4 text-center transition-transform duration-300 hover:scale-105`}>
+                        <div className={`bg-gradient-to-br ${colors.light} dark:bg-emerald-900/10 rounded-xl p-4 text-center`}>
                             <p className="text-2xl font-extrabold text-emerald-500">{animPresent}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">Present</p>
                         </div>
-                        <div className={`bg-gradient-to-br ${colors.light} dark:bg-blue-900/10 rounded-xl p-4 text-center transition-transform duration-300 hover:scale-105`}>
+                        <div className={`bg-gradient-to-br ${colors.light} dark:bg-blue-900/10 rounded-xl p-4 text-center`}>
                             <p className={`text-2xl font-extrabold ${colors.text} dark:text-blue-400`}>{animTotal}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">Total</p>
                         </div>
-                        <div className={`bg-gradient-to-br ${colors.light} dark:bg-purple-900/10 rounded-xl p-4 text-center transition-transform duration-300 hover:scale-105`}>
+                        <div className={`bg-gradient-to-br ${colors.light} dark:bg-purple-900/10 rounded-xl p-4 text-center`}>
                             <p className="text-2xl font-extrabold text-purple-500">{cls.semesterProgress}%</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">Semester</p>
                         </div>

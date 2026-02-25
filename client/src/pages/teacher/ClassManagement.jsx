@@ -48,7 +48,7 @@ const ClassManagement = () => {
     ];
 
     return (
-        <div className="page-container animate-fade-in">
+        <div className="page-container">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
@@ -72,7 +72,7 @@ const ClassManagement = () => {
 
             {/* Create Form */}
             {showForm && (
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 to-purple-400 p-[1px] mb-8 animate-slide-up">
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 to-purple-400 p-[1px] mb-8">
                     <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
                         <h3 className="font-bold dark:text-white mb-4 flex items-center gap-2 relative">
                             <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-violet-500 to-purple-400 flex items-center justify-center text-white text-sm">📝</span>

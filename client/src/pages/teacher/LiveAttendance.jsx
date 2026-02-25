@@ -65,7 +65,7 @@ const LiveAttendance = () => {
     );
 
     return (
-        <div className="page-container animate-fade-in">
+        <div className="page-container">
             <button onClick={() => navigate('/teacher/session')}
                 className="flex items-center text-gray-500 dark:text-gray-400 hover:text-primary-500 mb-6 transition-colors">
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,7 +136,7 @@ const LiveAttendance = () => {
                             </thead>
                             <tbody>
                                 {attendance.map((a, idx) => (
-                                    <tr key={a._id || idx} className="border-b border-gray-100 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors animate-slide-up">
+                                    <tr key={a._id || idx} className="border-b border-gray-100 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
                                         <td className="py-3 px-4 dark:text-gray-300">{idx + 1}</td>
                                         <td className="py-3 px-4 font-mono text-xs dark:text-gray-300">{a.student?.rollNumber}</td>
                                         <td className="py-3 px-4 dark:text-white font-medium">{a.student?.name}</td>

@@ -125,7 +125,7 @@ const Register = () => {
                     </div>
 
                     {error && (
-                        <div className="mb-4 p-4 rounded-xl bg-rose-500/10 border border-rose-400/30 text-rose-200 text-sm font-medium flex items-center gap-2 animate-slide-down">
+                        <div className="mb-4 p-4 rounded-xl bg-rose-500/10 border border-rose-400/30 text-rose-200 text-sm font-medium flex items-center gap-2">
                             <span>⚠️</span> {error}
                         </div>
                     )}

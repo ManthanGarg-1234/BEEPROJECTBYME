@@ -97,7 +97,7 @@ const SessionManager = () => {
     };
 
     return (
-        <div className="page-container animate-fade-in">
+        <div className="page-container">
             <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
                     <span className="text-white text-lg">🎯</span>

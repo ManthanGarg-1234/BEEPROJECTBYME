@@ -30,7 +30,7 @@ const EvaluationPanel = () => {
     };
 
     return (
-        <div className="page-container animate-fade-in">
+        <div className="page-container">
             <h1 className="section-title text-3xl mb-2">Attendance Evaluation</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-8">
                 Run evaluation to check attendance levels and send warning emails (activates after 40% semester)
@@ -49,7 +49,7 @@ const EvaluationPanel = () => {
                 </div>
 
                 {result && (
-                    <div className="animate-slide-up">
+                    <div>
                         {result.skipped ? (
                             <div className="glass-card-solid p-6 text-center">
                                 <span className="text-4xl block mb-3">⏳</span>

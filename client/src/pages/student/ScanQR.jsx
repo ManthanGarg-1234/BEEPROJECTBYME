@@ -237,7 +237,7 @@ const ScanQR = () => {
     };
 
     return (
-        <div className="page-container animate-fade-in">
+        <div className="page-container">
             <h1 className="section-title text-3xl mb-2">Scan QR Code</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-8">Scan the QR displayed by your teacher</p>
 
@@ -281,7 +281,7 @@ const ScanQR = () => {
 
                 {/* Result / Error */}
                 {result && (
-                    <div className="mb-6 p-6 rounded-xl bg-green-500/10 border border-green-500/30 text-center animate-slide-up">
+                    <div className="mb-6 p-6 rounded-xl bg-green-500/10 border border-green-500/30 text-center">
                         <span className="text-5xl block mb-3">✅</span>
                         <p className="text-green-500 font-bold text-xl">{result.message}</p>
                         <p className="text-gray-500 text-sm mt-2">

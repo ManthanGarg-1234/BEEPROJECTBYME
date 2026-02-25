@@ -267,7 +267,7 @@ const TeacherDashboard = () => {
 
                 <div>
                     {/* Header with gradient accent */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 animate-fade-in">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                         <div>
                             <div className="flex items-center gap-3 mb-1">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
@@ -337,7 +337,7 @@ const TeacherDashboard = () => {
                     </div>
 
                     {/* Semester Progress - Colorful */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] mb-8 animate-slide-up">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] mb-8">
                         <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
                             <div className="flex justify-between items-center mb-3 relative">
                                 <h3 className="font-bold dark:text-white flex items-center gap-2">
@@ -357,7 +357,7 @@ const TeacherDashboard = () => {
 
                     {/* Daily Chart - Colorful */}
                     {chartData.length > 0 && (
-                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 p-[1px] mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 p-[1px] mb-8">
                             <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
                                 <div className="flex items-center justify-between mb-5">
                                     <h3 className="font-bold dark:text-white flex items-center gap-2 relative">
@@ -411,7 +411,7 @@ const TeacherDashboard = () => {
                     )}
 
                     {/* Student Stats Table - Colorful */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 to-purple-400 p-[1px] animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 to-purple-400 p-[1px]">
                         <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
                             <div className="flex justify-between items-center mb-5">
                                 <h3 className="font-bold dark:text-white flex items-center gap-2">

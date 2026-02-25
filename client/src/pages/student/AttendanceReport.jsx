@@ -178,7 +178,7 @@ const AttendanceReport = () => {
 
                 <div>
                     {/* ── Header ────────────────────────────────────────────── */}
-                    <div className="mb-6 animate-fade-in">
+                    <div className="mb-6">
                         <div className="flex items-center justify-between gap-4 mb-1">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20">

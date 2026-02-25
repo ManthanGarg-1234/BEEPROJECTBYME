@@ -97,7 +97,7 @@ const ManualAttendance = () => {
     }, {}) || {};
 
     return (
-        <div className="page-container animate-fade-in">
+        <div className="page-container">
             <h1 className="section-title text-3xl mb-2">Manual Attendance</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-8">
                 Manually mark or override student attendance
