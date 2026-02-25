@@ -9,7 +9,7 @@ import api from '../../api';
 
 /* ─── constants ──────────────────────────────────────────────────────────── */
 const GROUPS   = ['G18', 'G19', 'G20', 'G21', 'G22'];
-const SUBJECTS = [
+const ALL_SUBJECTS = [
     { code: 'CN',     name: 'Computer Networks',   icon: '🌐' },
     { code: 'BE',     name: 'Backend Engineering',  icon: '⚙️' },
     { code: 'DSOOPS', name: 'DSOOPS',               icon: '🗂️' },
@@ -67,8 +67,12 @@ const MiniDoughnut = ({ present, late, absent }) => {
    MAIN COMPONENT
 ════════════════════════════════════════════════════════════════════════════ */
 const AttendanceReport = () => {
+    /* teacher's own classes & subjects derived from API */
+    const [myClasses,  setMyClasses]  = useState([]);
+    const [mySubjects, setMySubjects] = useState([]);
+
     /* selector state */
-    const [subCode, setSubCode]     = useState('CN');
+    const [subCode, setSubCode]     = useState('');
     const [mainTab, setMainTab]     = useState('overview');     // overview | daily | compare | heatmap
     const [selectedDate, setSelectedDate] = useState(null);
 
@@ -77,7 +81,7 @@ const AttendanceReport = () => {
     const [subjectDaily, setSubjectDaily] = useState(null); // group-subject-daily
     const [dayPies,      setDayPies]     = useState(null);  // group-day-pies
     const [heatmapData,  setHeatmapData] = useState(null);
-    const [heatmapClass, setHeatmapClass] = useState(`${subCode}-G18`);
+    const [heatmapClass, setHeatmapClass] = useState('');
 
     /* loading */
     const [loadingOv, setLoadingOv]       = useState(true);
@@ -85,17 +89,31 @@ const AttendanceReport = () => {
     const [loadingPies, setLoadingPies]   = useState(false);
     const [loadingHeat, setLoadingHeat]   = useState(false);
 
-    /* ── fetch overview (once) ──────────────────────────────────────────── */
+    /* ── load teacher's own classes first, then derive subjects ──────────── */
     useEffect(() => {
-        setLoadingOv(true);
-        api.get('/analytics/group-overview')
-            .then(r => setOverview(r.data))
-            .catch(console.error)
-            .finally(() => setLoadingOv(false));
+        api.get('/classes').then(r => {
+            const classes = r.data;
+            setMyClasses(classes);
+            // classId format: CODE-GROUP e.g. CN-G18
+            const codes = [...new Set(classes.map(c => c.classId.split('-')[0]))];
+            const filtered = ALL_SUBJECTS.filter(s => codes.includes(s.code));
+            setMySubjects(filtered);
+            if (filtered.length > 0) {
+                setSubCode(filtered[0].code);
+                const firstClass = classes.find(c => c.classId.startsWith(filtered[0].code + '-'));
+                setHeatmapClass(firstClass?.classId || `${filtered[0].code}-G18`);
+            }
+            // Fetch overview immediately after we know which classes the teacher has
+            api.get('/analytics/group-overview')
+                .then(r2 => setOverview(r2.data))
+                .catch(console.error)
+                .finally(() => setLoadingOv(false));
+        }).catch(() => setLoadingOv(false));
     }, []);
 
     /* ── fetch subject-daily when subCode changes ───────────────────────── */
     useEffect(() => {
+        if (!subCode) return;
         setLoadingSub(true);
         setSubjectDaily(null);
         setSelectedDate(null);
@@ -108,7 +126,7 @@ const AttendanceReport = () => {
 
     /* ── fetch day-pies when selectedDate changes ───────────────────────── */
     useEffect(() => {
-        if (!selectedDate) return;
+        if (!selectedDate || !subCode) return;
         setLoadingPies(true);
         api.get(`/analytics/group-day-pies/${subCode}/${selectedDate}`)
             .then(r => setDayPies(r.data))
@@ -173,10 +191,10 @@ const AttendanceReport = () => {
         } catch { alert('CSV export failed'); }
     };
 
-    /* ── subject selector bar ────────────────────────────────────────────── */
+    /* ── subject selector bar (only teacher's subjects) ────────────────── */
     const SubjectBar = () => (
         <div className="flex flex-wrap gap-2 mb-6">
-            {SUBJECTS.map(s => (
+            {mySubjects.map(s => (
                 <button key={s.code} onClick={() => setSubCode(s.code)}
                     className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2
                         ${subCode === s.code
@@ -440,7 +458,7 @@ const AttendanceReport = () => {
         // Also show cross-subject summary for each group (using overview matrix)
         const crossSubjectData = GROUPS.map(g => {
             const row = { group: g };
-            SUBJECTS.forEach(s => {
+            ALL_SUBJECTS.forEach(s => {
                 row[s.name] = overview?.matrix?.[s.code]?.[g]?.pct ?? 0;
             });
             return row;
@@ -460,7 +478,7 @@ const AttendanceReport = () => {
                                 <Tooltip {...TP} formatter={(v) => [`${v}%`]} />
                                 <Legend iconType="circle" iconSize={9}
                                     formatter={v => <span style={{ color: '#94a3b8', fontSize: 10 }}>{v}</span>} />
-                                {SUBJECTS.map((s, i) => (
+                                {ALL_SUBJECTS.map((s, i) => (
                                     <Bar key={s.code} dataKey={s.name} radius={[4, 4, 0, 0]}
                                         fill={['#6366f1','#22d3ee','#10b981','#f59e0b','#f43f5e'][i]} />
                                 ))}
@@ -473,7 +491,7 @@ const AttendanceReport = () => {
                 {mergedDaily.length > 0 && (
                     <div className="glass-card-solid p-6 rounded-2xl">
                         <h3 className="text-sm font-semibold text-slate-300 mb-4">
-                            📈 {SUBJECTS.find(s => s.code === subCode)?.name} — Attendance % Trends per Group
+                            📈 {ALL_SUBJECTS.find(s => s.code === subCode)?.name} — Attendance % Trends per Group
                         </h3>
                         <div className="h-72">
                             <ResponsiveContainer width="100%" height="100%">
@@ -511,7 +529,7 @@ const AttendanceReport = () => {
                             <thead>
                                 <tr className="bg-slate-800/60">
                                     <th className="text-left py-3 px-4 text-slate-400 font-medium sticky left-0 bg-slate-800/60 z-10 min-w-[80px]">Group</th>
-                                    {SUBJECTS.map(s => (
+                                    {ALL_SUBJECTS.map(s => (
                                         <th key={s.code} className="text-center py-3 px-3 text-slate-400 font-medium whitespace-nowrap">{s.icon} {s.code}</th>
                                     ))}
                                 </tr>
@@ -520,7 +538,7 @@ const AttendanceReport = () => {
                                 {GROUPS.map(g => (
                                     <tr key={g} className="border-t border-slate-800/50 hover:bg-slate-800/30 transition-colors">
                                         <td className="py-3 px-4 font-extrabold sticky left-0 bg-slate-900/80 z-10" style={{ color: GROUP_COLORS[g] }}>{g}</td>
-                                        {SUBJECTS.map(s => {
+                                        {ALL_SUBJECTS.map(s => {
                                             const p = overview?.matrix?.[s.code]?.[g]?.pct ?? null;
                                             return (
                                                 <td key={s.code} className="py-3 px-3 text-center">
@@ -556,8 +574,8 @@ const AttendanceReport = () => {
                 <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm text-slate-400 font-medium">Select class:</span>
                     <div className="flex flex-wrap gap-2">
-                        {SUBJECTS.map(s => GROUPS.map(g => {
-                            const cid = `${s.code}-${g}`;
+                        {myClasses.map(cls => {
+                            const cid = cls.classId;
                             return (
                                 <button key={cid} onClick={() => setHeatmapClass(cid)}
                                     className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all
@@ -567,7 +585,7 @@ const AttendanceReport = () => {
                                     {cid}
                                 </button>
                             );
-                        }))}
+                        })}
                     </div>
                 </div>
 
@@ -626,7 +644,7 @@ const AttendanceReport = () => {
     };
 
     /* ── current subject info ────────────────────────────────────────────── */
-    const curSub = SUBJECTS.find(s => s.code === subCode);
+    const curSub = ALL_SUBJECTS.find(s => s.code === subCode);
 
     return (
         <div className="page-container animate-fade-in">

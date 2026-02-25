@@ -5,7 +5,8 @@ import api from '../../api';
 const ClassManagement = () => {
     const [classes, setClasses] = useState([]);
     const [showForm, setShowForm] = useState(false);
-    const [form, setForm] = useState({ classId: '', subject: '', semesterStartDate: '', semesterEndDate: '' });
+    const [form, setForm] = useState({ classId: '', subject: '', semesterStartDate: '' });
+    const today = new Date().toISOString().split('T')[0];
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -23,7 +24,7 @@ const ClassManagement = () => {
         setLoading(true);
         try {
             await api.post('/classes', form);
-            setForm({ classId: '', subject: '', semesterStartDate: '', semesterEndDate: '' });
+            setForm({ classId: '', subject: '', semesterStartDate: '' });
             setShowForm(false);
             fetchClasses();
         } catch (err) {
@@ -61,7 +62,7 @@ const ClassManagement = () => {
                     </div>
                 </div>
                 <button onClick={() => setShowForm(!showForm)}
-                    className={`px-6 py-3 rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 active:scale-95 shadow-md ${showForm
+                    className={`px-6 py-3 rounded-xl font-bold text-sm shadow-md ${showForm
                         ? 'bg-gray-200 dark:bg-dark-600 text-gray-700 dark:text-gray-200'
                         : 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-purple-500/20 hover:shadow-lg hover:shadow-purple-500/30'
                         }`}>
@@ -73,7 +74,6 @@ const ClassManagement = () => {
             {showForm && (
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 to-purple-400 p-[1px] mb-8 animate-slide-up">
                     <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
-                        <div className="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-br from-violet-200 to-purple-200 dark:from-violet-900/20 dark:to-purple-900/20 rounded-full blur-3xl"></div>
                         <h3 className="font-bold dark:text-white mb-4 flex items-center gap-2 relative">
                             <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-violet-500 to-purple-400 flex items-center justify-center text-white text-sm">📝</span>
                             Create New Class
@@ -95,18 +95,14 @@ const ClassManagement = () => {
                                     className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-dark-700 border-2 border-gray-200 dark:border-dark-600 text-gray-800 dark:text-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all" placeholder="Data Structures & Algorithms" required />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Semester Start</label>
-                                <input type="date" value={form.semesterStartDate} onChange={(e) => setForm({ ...form, semesterStartDate: e.target.value })}
+                                <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Class Commencement Date</label>
+                                <input type="date" value={form.semesterStartDate} min={today} onChange={(e) => setForm({ ...form, semesterStartDate: e.target.value })}
                                     className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-dark-700 border-2 border-gray-200 dark:border-dark-600 text-gray-800 dark:text-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all" required />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Semester End</label>
-                                <input type="date" value={form.semesterEndDate} onChange={(e) => setForm({ ...form, semesterEndDate: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-dark-700 border-2 border-gray-200 dark:border-dark-600 text-gray-800 dark:text-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all" required />
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Date from which this subject's classes are conducted. Attendance tracking ends 6 months later.</p>
                             </div>
                             <div className="md:col-span-2">
                                 <button type="submit" disabled={loading}
-                                    className="bg-gradient-to-r from-violet-500 to-purple-500 text-white px-8 py-3 rounded-xl font-bold shadow-md shadow-purple-500/20 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100">
+                                    className="bg-gradient-to-r from-violet-500 to-purple-500 text-white px-8 py-3 rounded-xl font-bold shadow-md shadow-purple-500/20 disabled:opacity-50">
                                     {loading ? 'Creating...' : '🚀 Create Class'}
                                 </button>
                             </div>
@@ -120,12 +116,12 @@ const ClassManagement = () => {
                 {classes.map((cls, idx) => {
                     const colors = cardColors[idx % cardColors.length];
                     return (
-                        <div key={cls._id} className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${colors.gradient} p-[1px] ${colors.shadow} shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group`}>
+                        <div key={cls._id} className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${colors.gradient} p-[1px] ${colors.shadow} shadow-lg group`}>
                             <div className="bg-white dark:bg-dark-800 rounded-[15px] h-full relative overflow-hidden">
                                 {/* Color header strip */}
                                 <div className={`bg-gradient-to-r ${colors.gradient} px-6 py-4`}>
                                     <div className="flex items-start justify-between">
-                                        <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-white font-bold text-lg">
+                                        <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-lg">
                                             {cls.classId.substring(0, 2)}
                                         </div>
                                         <button onClick={() => handleDelete(cls._id)}
@@ -149,18 +145,26 @@ const ClassManagement = () => {
                                         <div className="flex justify-between items-center">
                                             <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">📅 Semester</span>
                                             <span className="font-medium dark:text-white text-xs">
-                                                {new Date(cls.semesterStartDate).toLocaleDateString()} - {new Date(cls.semesterEndDate).toLocaleDateString()}
+                                                {new Date(cls.semesterStartDate).toLocaleDateString()} – {new Date(cls.semesterEndDate).toLocaleDateString()}
                                             </span>
                                         </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">📊 Progress</span>
-                                            <span className="font-bold bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-0.5 rounded-lg text-emerald-600 dark:text-emerald-400">{cls.semesterProgress}%</span>
+                                        <div>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5 text-sm">📊 Semester Progress</span>
+                                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{cls.semesterProgress}%</span>
+                                            </div>
+                                            <div className="w-full h-2 rounded-full bg-gray-100 dark:bg-dark-600 overflow-hidden">
+                                                <div
+                                                    className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-700"
+                                                    style={{ width: `${cls.semesterProgress}%` }}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div className="mt-5 pt-4 border-t border-gray-100 dark:border-dark-700">
                                         <button onClick={() => navigate(`/teacher/classes/${cls._id}/enroll`)}
-                                            className={`w-full py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r ${colors.light} dark:bg-dark-700 border-2 border-transparent hover:border-2 transition-all duration-300 hover:scale-[1.02] active:scale-95`}
+                                            className={`w-full py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r ${colors.light} dark:bg-dark-700 border-2 border-transparent`}
                                             style={{ borderImageSlice: 1 }}>
                                             📝 Bulk Enroll Students
                                         </button>
@@ -175,8 +179,7 @@ const ClassManagement = () => {
             {classes.length === 0 && !showForm && (
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 to-purple-400 p-[1px]">
                     <div className="bg-white dark:bg-dark-800 rounded-[15px] p-16 text-center relative overflow-hidden">
-                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-violet-200 to-purple-200 dark:from-violet-900/20 dark:to-purple-900/20 rounded-full blur-2xl"></div>
-                        <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-500 flex items-center justify-center animate-float shadow-lg shadow-purple-500/20">
+                        <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
                             <span className="text-4xl">📚</span>
                         </div>
                         <h3 className="text-xl font-bold dark:text-white mb-2 relative">No classes created yet</h3>

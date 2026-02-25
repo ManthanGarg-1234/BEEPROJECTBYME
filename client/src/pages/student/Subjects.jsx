@@ -155,8 +155,6 @@ const Subjects = () => {
                     {classes.length === 0 ? (
                         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-500 p-[1px]">
                             <div className="bg-white dark:bg-dark-800 rounded-[22px] p-12 text-center relative overflow-hidden">
-                                <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-cyan-200 to-blue-200 dark:from-cyan-900/30 dark:to-blue-900/30 rounded-full blur-2xl"></div>
-                                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-indigo-200 to-purple-200 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-full blur-2xl"></div>
                                 <div className="relative mx-auto w-20 h-20 mb-6 bg-gradient-to-br from-cyan-100 to-blue-100 dark:from-cyan-900/30 dark:to-blue-900/30 rounded-2xl flex items-center justify-center">
                                     <span className="text-4xl">📚</span>
                                 </div>
@@ -183,14 +181,14 @@ const Subjects = () => {
                                         key={cls.classId}
                                         type="button"
                                         onClick={() => navigate(`/student/reports?classId=${cls.classId}`)}
-                                        className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${colors.gradient} p-[1px] ${colors.shadow} shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 text-left w-full group`}
+                                        className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${colors.gradient} p-[1px] ${colors.shadow} shadow-lg text-left w-full group`}
                                     >
                                         <div className="bg-white dark:bg-dark-800 rounded-[15px] relative overflow-hidden h-full">
                                             {/* Colorful header bar */}
                                             <div className={`bg-gradient-to-r ${colors.gradient} px-5 py-4`}>
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-white text-lg font-bold">
+                                                        <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white text-lg font-bold">
                                                             {cls.classId.substring(0, 3)}
                                                         </div>
                                                         <div>

@@ -27,9 +27,10 @@ router.post('/', auth, authorize('teacher'), classValidation, async (req, res) =
             return res.status(400).json({ message: 'Class ID already exists' });
         }
 
-        // Validate dates
         const start = new Date(semesterStartDate);
-        const end = new Date(semesterEndDate);
+        // Auto-calculate end date: 6 months after start (or use provided value)
+        const end = semesterEndDate ? new Date(semesterEndDate) : new Date(new Date(semesterStartDate).setMonth(new Date(semesterStartDate).getMonth() + 6));
+
         if (end <= start) {
             return res.status(400).json({ message: 'End date must be after start date' });
         }

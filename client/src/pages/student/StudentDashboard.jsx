@@ -105,11 +105,9 @@ const StudentDashboard = () => {
 
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-500 p-[1px]">
                         <div className="bg-white dark:bg-dark-800 rounded-[22px] p-12 text-center relative overflow-hidden">
-                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-cyan-200 to-blue-200 dark:from-cyan-900/30 dark:to-blue-900/30 rounded-full blur-2xl"></div>
-                            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-indigo-200 to-purple-200 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-full blur-2xl"></div>
 
                             <div className="relative mx-auto w-40 h-40 mb-6">
-                                <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="animate-float">
+                                <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="100" cy="100" r="80" fill="url(#stuGrad)" opacity="0.08" />
                                     <rect x="55" y="60" width="90" height="80" rx="12" fill="url(#stuGrad)" opacity="0.15" />
                                     <circle cx="100" cy="85" r="15" fill="#60a5fa" opacity="0.4" />
@@ -325,13 +323,13 @@ const ClassCard = ({ cls, colors, isFocused }) => {
     const ringColor = cls.percentage >= 75 ? '#10b981' : cls.percentage >= 65 ? '#f59e0b' : '#ef4444';
 
     return (
-        <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${colors.gradient} p-[1px] ${colors.shadow} shadow-lg transition-all duration-300 ${isFocused ? 'ring-2 ring-cyan-300/70 scale-[1.01]' : 'hover:shadow-xl hover:scale-[1.01]'}`}>
+        <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${colors.gradient} p-[1px] ${colors.shadow} shadow-lg ${isFocused ? 'ring-2 ring-cyan-300/70 scale-[1.01]' : ''}`}>
             <div className="bg-white dark:bg-dark-800 rounded-[15px] relative overflow-hidden">
                 {/* Colorful Header Bar */}
                 <div className={`bg-gradient-to-r ${colors.gradient} px-6 py-4`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-white text-lg font-bold">
+                            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white text-lg font-bold">
                                 {cls.classId.substring(0, 3)}
                             </div>
                             <div>

@@ -26,45 +26,9 @@ function App() {
     const [showVideo, setShowVideo] = useState(true);
 
     useEffect(() => {
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-
-        const evaluatePerformanceMode = () => {
-            const prefersReduced = mediaQuery.matches;
-            const saveData = !!connection?.saveData;
-            const effectiveType = connection?.effectiveType || '';
-            const slowConnection = effectiveType.includes('2g');
-            const lowCPU = Number.isFinite(navigator.hardwareConcurrency) && navigator.hardwareConcurrency <= 4;
-            const lowMemory = Number.isFinite(navigator.deviceMemory) && navigator.deviceMemory <= 4;
-            const shouldReduce = prefersReduced || saveData || slowConnection || lowCPU || lowMemory;
-
-            setReducedMotion(shouldReduce);
-            setShowVideo(!shouldReduce);
-        };
-
-        evaluatePerformanceMode();
-
-        if (mediaQuery.addEventListener) {
-            mediaQuery.addEventListener('change', evaluatePerformanceMode);
-        } else {
-            mediaQuery.addListener(evaluatePerformanceMode);
-        }
-
-        if (connection?.addEventListener) {
-            connection.addEventListener('change', evaluatePerformanceMode);
-        }
-
-        return () => {
-            if (mediaQuery.removeEventListener) {
-                mediaQuery.removeEventListener('change', evaluatePerformanceMode);
-            } else {
-                mediaQuery.removeListener(evaluatePerformanceMode);
-            }
-
-            if (connection?.removeEventListener) {
-                connection.removeEventListener('change', evaluatePerformanceMode);
-            }
-        };
+        // Always use reduced motion to prevent UI lag
+        setReducedMotion(true);
+        setShowVideo(false);
     }, []);
 
     if (loading) return <LoadingSpinner />;

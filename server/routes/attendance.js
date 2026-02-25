@@ -186,6 +186,16 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
 // @access  Teacher
 router.get('/session/:sessionId', auth, authorize('teacher'), async (req, res) => {
     try {
+        const session = await Session.findById(req.params.sessionId);
+        if (!session) return res.status(404).json({ message: 'Session not found' });
+
+        // Verify teacher owns this session's class
+        const Class = require('../models/Class');
+        const cls = await Class.findById(session.class);
+        if (!cls || cls.teacher.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Access denied: not your class' });
+        }
+
         const attendance = await Attendance.find({ session: req.params.sessionId })
             .populate('student', 'name email rollNumber')
             .sort({ markedAt: 1 });
@@ -219,6 +229,15 @@ router.get('/student/:classId', auth, authorize('student'), async (req, res) => 
 // @access  Teacher
 router.get('/suspicious/:sessionId', auth, authorize('teacher'), async (req, res) => {
     try {
+        const session = await Session.findById(req.params.sessionId);
+        if (!session) return res.status(404).json({ message: 'Session not found' });
+
+        const Class = require('../models/Class');
+        const cls = await Class.findById(session.class);
+        if (!cls || cls.teacher.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Access denied: not your class' });
+        }
+
         const logs = await SuspiciousLog.find({ session: req.params.sessionId })
             .populate('student', 'name email rollNumber')
             .sort({ createdAt: -1 });
@@ -240,6 +259,11 @@ router.get('/manual/:sessionId', auth, authorize('teacher'), async (req, res) =>
         const Class = require('../models/Class');
         const cls = await Class.findById(session.class._id || session.class).populate('students', 'name email rollNumber');
         if (!cls) return res.status(404).json({ message: 'Class not found' });
+
+        // Verify teacher owns this class
+        if (cls.teacher.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Access denied: not your class' });
+        }
 
         const attendance = await Attendance.find({ session: session._id }).populate('student', 'name email rollNumber');
         const attendanceMap = {};

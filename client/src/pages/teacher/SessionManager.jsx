@@ -112,10 +112,9 @@ const SessionManager = () => {
                 <div className="max-w-lg mx-auto">
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 to-orange-400 p-[1px] shadow-lg shadow-amber-500/15">
                         <div className="bg-white dark:bg-dark-800 rounded-[15px] p-8 relative overflow-hidden">
-                            <div className="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-br from-amber-200 to-orange-200 dark:from-amber-900/20 dark:to-orange-900/20 rounded-full blur-3xl"></div>
 
                             <div className="text-center mb-6 relative">
-                                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-xl shadow-amber-500/25 mb-4 animate-float">
+                                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-xl shadow-amber-500/25 mb-4">
                                     <span className="text-4xl">📡</span>
                                 </div>
                                 <h2 className="text-xl font-bold dark:text-white">Start New Session</h2>
@@ -155,7 +154,7 @@ const SessionManager = () => {
                                         min="1" max="30" className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-dark-700 border-2 border-gray-200 dark:border-dark-600 text-gray-800 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all" />
                                 </div>
                                 <button onClick={startSession} disabled={loading || !location}
-                                    className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-lg font-bold rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100">
+                                    className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-lg font-bold rounded-xl shadow-lg shadow-amber-500/20 disabled:opacity-50">
                                     {loading ? 'Starting...' : '🚀 Start Session'}
                                 </button>
                             </div>
@@ -166,7 +165,6 @@ const SessionManager = () => {
                 <div className="max-w-2xl mx-auto">
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 p-[1px] shadow-lg shadow-emerald-500/15">
                         <div className="bg-white dark:bg-dark-800 rounded-[15px] p-8 text-center relative overflow-hidden">
-                            <div className="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-br from-emerald-200 to-teal-200 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-full blur-3xl"></div>
 
                             {/* Status Badge */}
                             <div className="mb-6 relative">
@@ -208,15 +206,15 @@ const SessionManager = () => {
 
                             <div className="flex gap-3 relative">
                                 <button onClick={() => navigate(`/teacher/session/${activeSession._id}/live`)}
-                                    className="flex-1 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-md shadow-blue-500/15 hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105 active:scale-95">
+                                    className="flex-1 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-md shadow-blue-500/15">
                                     📊 Live Attendance
                                 </button>
                                 <button onClick={() => navigate('/teacher/manual-attendance')}
-                                    className="flex-1 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-violet-500 to-purple-400 text-white shadow-md shadow-violet-500/15 hover:shadow-lg hover:shadow-violet-500/25 transition-all duration-300 hover:scale-105 active:scale-95">
+                                    className="flex-1 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-violet-500 to-purple-400 text-white shadow-md shadow-violet-500/15">
                                     ✏️ Manual
                                 </button>
                                 <button onClick={endSession}
-                                    className="flex-1 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-rose-500 to-red-400 text-white shadow-md shadow-rose-500/15 hover:shadow-lg hover:shadow-rose-500/25 transition-all duration-300 hover:scale-105 active:scale-95">
+                                    className="flex-1 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-rose-500 to-red-400 text-white shadow-md shadow-rose-500/15">
                                     ⏹ End Session
                                 </button>
                             </div>

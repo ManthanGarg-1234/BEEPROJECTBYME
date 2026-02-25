@@ -1,6 +1,6 @@
 const { body } = require('express-validator');
 
-const COLLEGE_DOMAIN = process.env.COLLEGE_DOMAIN || 'abcuniversity.edu';
+const COLLEGE_DOMAIN = process.env.COLLEGE_DOMAIN || 'chitkara.edu';
 
 const registerValidation = [
     body('name')
@@ -97,7 +97,7 @@ const classValidation = [
         .isISO8601().withMessage('Invalid date format'),
 
     body('semesterEndDate')
-        .notEmpty().withMessage('Semester end date is required')
+        .optional()
         .isISO8601().withMessage('Invalid date format')
 ];
 

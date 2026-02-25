@@ -1,28 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import api from '../../api';
-
-// Animated counter hook
-const useAnimatedCounter = (end, duration = 1200) => {
-    const [count, setCount] = useState(0);
-    const prevEnd = useRef(0);
-    useEffect(() => {
-        if (end === undefined || end === null) return;
-        const startVal = prevEnd.current;
-        prevEnd.current = end;
-        const startTime = Date.now();
-        const step = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.round(startVal + (end - startVal) * eased));
-            if (progress < 1) requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
-    }, [end, duration]);
-    return count;
-};
 
 const TeacherDashboard = () => {
     const [classes, setClasses] = useState([]);
@@ -31,11 +10,6 @@ const TeacherDashboard = () => {
     const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-
-    const animSessions = useAnimatedCounter(stats?.totalSessions);
-    const animAvg = useAnimatedCounter(stats?.avgAttendance);
-    const animStudents = useAnimatedCounter(stats?.totalStudents);
-    const animBelow = useAnimatedCounter(stats?.belowThresholdCount);
 
     const quickNav = [
         { label: 'Dashboard', path: '/teacher/dashboard', icon: '📊' },
@@ -138,13 +112,9 @@ const TeacherDashboard = () => {
 
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1">
                         <div className="bg-white dark:bg-dark-800 rounded-[22px] p-12 text-center relative overflow-hidden">
-                            {/* Decorative circles */}
-                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-purple-200 to-pink-200 dark:from-purple-900/30 dark:to-pink-900/30 rounded-full blur-2xl"></div>
-                            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-blue-200 to-indigo-200 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-full blur-2xl"></div>
-
                             {/* SVG Illustration */}
                             <div className="relative mx-auto w-48 h-48 mb-6">
-                                <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="animate-float">
+                                <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="100" cy="100" r="80" fill="url(#emptyGrad)" opacity="0.1" />
                                     <rect x="60" y="50" width="80" height="100" rx="8" fill="url(#emptyGrad)" opacity="0.2" />
                                     <rect x="70" y="65" width="45" height="4" rx="2" fill="#818cf8" />
@@ -169,7 +139,7 @@ const TeacherDashboard = () => {
                             <p className="text-gray-500 dark:text-gray-400 mb-8 max-w-sm mx-auto relative">
                                 Create your first class to start tracking attendance and generate beautiful reports
                             </p>
-                            <button onClick={() => navigate('/teacher/classes')} className="relative bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 active:scale-95">
+                            <button onClick={() => navigate('/teacher/classes')} className="relative bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-purple-500/30">
                                 ✨ Create Your First Class
                             </button>
                         </div>
@@ -182,7 +152,7 @@ const TeacherDashboard = () => {
     const statCards = [
         {
             label: 'Total Sessions',
-            value: animSessions,
+            value: stats?.totalSessions ?? 0,
             icon: '📅',
             gradient: 'from-blue-500 to-cyan-400',
             bgLight: 'from-blue-50 to-cyan-50',
@@ -192,7 +162,7 @@ const TeacherDashboard = () => {
         },
         {
             label: 'Avg Attendance',
-            value: `${animAvg}%`,
+            value: `${stats?.avgAttendance ?? 0}%`,
             icon: '📊',
             gradient: 'from-emerald-500 to-teal-400',
             bgLight: 'from-emerald-50 to-teal-50',
@@ -202,7 +172,7 @@ const TeacherDashboard = () => {
         },
         {
             label: 'Total Students',
-            value: animStudents,
+            value: stats?.totalStudents ?? 0,
             icon: '👥',
             gradient: 'from-violet-500 to-purple-400',
             bgLight: 'from-violet-50 to-purple-50',
@@ -212,7 +182,7 @@ const TeacherDashboard = () => {
         },
         {
             label: 'Below 75%',
-            value: animBelow,
+            value: stats?.belowThresholdCount ?? 0,
             icon: '⚠️',
             gradient: 'from-rose-500 to-orange-400',
             bgLight: 'from-rose-50 to-orange-50',
@@ -333,7 +303,7 @@ const TeacherDashboard = () => {
                     {/* Vibrant Gradient Stat Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8 stagger-children">
                         {statCards.map((card, i) => (
-                            <div key={i} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-[1px] group hover:scale-[1.03] transition-all duration-300 ${card.shadowColor} shadow-lg hover:shadow-xl`}>
+                            <div key={i} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-[1px] group ${card.shadowColor} shadow-lg`}>
                                 <div className={`bg-white dark:bg-dark-800 rounded-[15px] p-5 h-full relative overflow-hidden`}>
                                     {/* Colored accent corner */}
                                     <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${card.gradient} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
@@ -353,7 +323,7 @@ const TeacherDashboard = () => {
                                             </p>
                                             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{card.helper}</p>
                                         </div>
-                                        <div className={`w-14 h-14 rounded-2xl ${card.iconBg} flex items-center justify-center group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                                        <div className={`w-14 h-14 rounded-2xl ${card.iconBg} flex items-center justify-center`}>
                                             <span className="text-2xl">{card.icon}</span>
                                         </div>
                                     </div>
@@ -369,7 +339,6 @@ const TeacherDashboard = () => {
                     {/* Semester Progress - Colorful */}
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] mb-8 animate-slide-up">
                         <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
-                            <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-purple-200 to-pink-200 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full blur-3xl"></div>
                             <div className="flex justify-between items-center mb-3 relative">
                                 <h3 className="font-bold dark:text-white flex items-center gap-2">
                                     <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm">📈</span>
@@ -379,11 +348,9 @@ const TeacherDashboard = () => {
                             </div>
                             <div className="relative h-4 bg-gray-100 dark:bg-dark-600 rounded-full overflow-hidden">
                                 <div
-                                    className="absolute h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full transition-all duration-1000 ease-out"
+                                    className="absolute h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full"
                                     style={{ width: `${Math.min(stats.semesterProgress, 100)}%` }}
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent" style={{ animation: 'shimmer 2s infinite' }}></div>
-                                </div>
+                                ></div>
                             </div>
                         </div>
                     </div>
@@ -392,7 +359,6 @@ const TeacherDashboard = () => {
                     {chartData.length > 0 && (
                         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 p-[1px] mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
                             <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
-                                <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-blue-200 to-cyan-200 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-full blur-3xl"></div>
                                 <div className="flex items-center justify-between mb-5">
                                     <h3 className="font-bold dark:text-white flex items-center gap-2 relative">
                                     <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white text-sm">📈</span>
@@ -454,7 +420,7 @@ const TeacherDashboard = () => {
                                 </h3>
                                 <button
                                     onClick={() => navigate('/teacher/reports')}
-                                    className="bg-gradient-to-r from-violet-500 to-purple-500 text-white text-sm px-5 py-2 rounded-xl font-semibold shadow-md shadow-purple-500/20 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                                    className="bg-gradient-to-r from-violet-500 to-purple-500 text-white text-sm px-5 py-2 rounded-xl font-semibold shadow-md shadow-purple-500/20 transition-shadow duration-200 flex items-center gap-1.5"
                                 >
                                     Full Report
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -32,9 +32,13 @@ const Register = () => {
             await register(data, photoFile);
             navigate('/login');
         } catch (err) {
-            const data = err.response?.data;
-            const msg = data?.message || data?.error || (data?.errors && data.errors[0]?.msg) || 'Registration failed';
-            setError(msg);
+            if (!err.response) {
+                setError('Cannot connect to server. Make sure the backend is running.');
+            } else {
+                const data = err.response.data;
+                const msg = data?.message || data?.error || (data?.errors && data.errors[0]?.msg) || 'Registration error. Please try again.';
+                setError(msg);
+            }
         } finally { setLoading(false); }
     };
 
@@ -53,9 +57,9 @@ const Register = () => {
                     className="absolute inset-0 w-full h-full object-cover opacity-20"
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/15 via-transparent to-lime-500/10"></div>
-                <div className="absolute top-10 left-10 w-72 h-72 bg-cyan-400/10 rounded-full blur-3xl animate-blob"></div>
-                <div className="absolute bottom-10 right-10 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl animate-blob" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute top-1/2 right-1/4 w-48 h-48 bg-lime-400/10 rounded-full blur-3xl animate-blob" style={{ animationDelay: '4s' }}></div>
+                <div className="absolute top-10 left-10 w-72 h-72 bg-cyan-400/10 rounded-full"></div>
+                <div className="absolute bottom-10 right-10 w-72 h-72 bg-blue-400/10 rounded-full"></div>
+                <div className="absolute top-1/2 right-1/4 w-48 h-48 bg-lime-400/10 rounded-full"></div>
 
                 {particles.map(p => (
                     <div key={p.id} className="particle"
@@ -64,7 +68,7 @@ const Register = () => {
                 ))}
 
                 <div className="relative z-10 text-center px-12">
-                    <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-80 mx-auto mb-8 animate-float">
+                    <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-80 mx-auto mb-8">
                         <circle cx="200" cy="140" r="70" fill="white" opacity="0.1" />
                         <circle cx="200" cy="120" r="22" fill="white" opacity="0.25" />
                         <circle cx="200" cy="112" r="10" fill="white" opacity="0.4" />
@@ -90,7 +94,7 @@ const Register = () => {
 
                     <div className="mt-10 flex flex-col gap-3 max-w-xs mx-auto">
                         {[{ icon: '🎓', text: 'Student & Teacher accounts' }, { icon: '📱', text: 'Scan from any device' }, { icon: '📈', text: 'Trendline analytics' }].map((f, i) => (
-                            <div key={i} className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 text-white/90 text-sm font-medium animate-slide-right" style={{ animationDelay: `${0.3 + i * 0.15}s` }}>
+                            <div key={i} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3 text-white/90 text-sm font-medium">
                                 <span className="text-lg">{f.icon}</span>{f.text}
                             </div>
                         ))}

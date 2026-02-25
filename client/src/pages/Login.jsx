@@ -23,7 +23,12 @@ const Login = () => {
                 navigate(res.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard');
             }
         } catch (err) {
-            setError(err.response?.data?.error || 'Login failed');
+            if (!err.response) {
+                setError('Cannot connect to server. Make sure the backend is running.');
+            } else {
+                const data = err.response.data;
+                setError(data?.message || (data?.errors && data.errors[0]?.msg) || 'Invalid credentials');
+            }
         } finally {
             setLoading(false);
         }
@@ -51,9 +56,9 @@ const Login = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-transparent to-lime-500/10"></div>
                 {/* Animated background blobs */}
-                <div className="absolute top-10 left-10 w-72 h-72 bg-cyan-400/10 rounded-full blur-3xl animate-blob"></div>
-                <div className="absolute bottom-10 right-10 w-72 h-72 bg-blue-400/10 rounded-full blur-3xl animate-blob" style={{ animationDelay: '2s' }}></div>
-                <div className="absolute top-1/2 left-1/4 w-48 h-48 bg-lime-400/10 rounded-full blur-3xl animate-blob" style={{ animationDelay: '4s' }}></div>
+                <div className="absolute top-10 left-10 w-72 h-72 bg-cyan-400/10 rounded-full"></div>
+                <div className="absolute bottom-10 right-10 w-72 h-72 bg-blue-400/10 rounded-full"></div>
+                <div className="absolute top-1/2 left-1/4 w-48 h-48 bg-lime-400/10 rounded-full"></div>
 
                 {/* Floating particles */}
                 {particles.map(p => (
@@ -71,7 +76,7 @@ const Login = () => {
                 {/* Content */}
                 <div className="relative z-10 text-center px-12">
                     {/* SVG Illustration */}
-                    <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-80 mx-auto mb-8 animate-float">
+                    <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-80 mx-auto mb-8">
                         {/* Clipboard */}
                         <rect x="130" y="30" width="140" height="200" rx="15" fill="white" opacity="0.15" />
                         <rect x="170" y="20" width="60" height="20" rx="10" fill="white" opacity="0.25" />
@@ -114,7 +119,7 @@ const Login = () => {
                             { icon: '📡', text: 'Live session sync' },
                             { icon: '🧭', text: 'GPS proximity checks' },
                         ].map((f, i) => (
-                            <div key={i} className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 text-white/90 text-sm font-medium animate-slide-right" style={{ animationDelay: `${0.3 + i * 0.15}s` }}>
+                            <div key={i} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3 text-white/90 text-sm font-medium">
                                 <span className="text-lg">{f.icon}</span>
                                 {f.text}
                             </div>

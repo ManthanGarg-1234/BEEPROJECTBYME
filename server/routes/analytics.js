@@ -13,11 +13,11 @@ const router = express.Router();
 // @access  Teacher
 router.get('/dashboard/:classId', auth, authorize('teacher'), async (req, res) => {
     try {
-        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() })
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase(), teacher: req.user._id })
             .populate('students', 'name email rollNumber');
 
         if (!classDoc) {
-            return res.status(404).json({ message: 'Class not found' });
+            return res.status(404).json({ message: 'Class not found or you do not have access' });
         }
 
         // Total sessions
@@ -72,9 +72,9 @@ router.get('/dashboard/:classId', auth, authorize('teacher'), async (req, res) =
 // @access  Teacher
 router.get('/daily-chart/:classId', auth, authorize('teacher'), async (req, res) => {
     try {
-        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() });
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase(), teacher: req.user._id });
         if (!classDoc) {
-            return res.status(404).json({ message: 'Class not found' });
+            return res.status(404).json({ message: 'Class not found or you do not have access' });
         }
 
         const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 });
@@ -117,11 +117,11 @@ router.get('/daily-chart/:classId', auth, authorize('teacher'), async (req, res)
 // @access  Teacher
 router.get('/heatmap/:classId', auth, authorize('teacher'), async (req, res) => {
     try {
-        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() })
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase(), teacher: req.user._id })
             .populate('students', 'name rollNumber');
 
         if (!classDoc) {
-            return res.status(404).json({ message: 'Class not found' });
+            return res.status(404).json({ message: 'Class not found or you do not have access' });
         }
 
         const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 });
@@ -164,11 +164,11 @@ router.get('/heatmap/:classId', auth, authorize('teacher'), async (req, res) => 
 router.get('/csv/:classId', auth, authorize('teacher'), async (req, res) => {
     try {
         const { type } = req.query; // 'daily' or 'monthly'
-        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() })
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase(), teacher: req.user._id })
             .populate('students', 'name rollNumber email');
 
         if (!classDoc) {
-            return res.status(404).json({ message: 'Class not found' });
+            return res.status(404).json({ message: 'Class not found or you do not have access' });
         }
 
         const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 });
@@ -227,9 +227,9 @@ router.get('/csv/:classId', auth, authorize('teacher'), async (req, res) => {
 // @access  Teacher
 router.post('/evaluate/:classId', auth, authorize('teacher'), async (req, res) => {
     try {
-        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() });
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase(), teacher: req.user._id });
         if (!classDoc) {
-            return res.status(404).json({ message: 'Class not found' });
+            return res.status(404).json({ message: 'Class not found or you do not have access' });
         }
 
         const result = await evaluateClassAttendance(classDoc._id);
@@ -349,10 +349,8 @@ router.get('/group-overview', auth, authorize('teacher'), async (req, res) => {
             { code: 'DM',     name: 'Discrete Mathematics' },
         ];
 
-        // Fetch all 25 classes at once
-        const allClasses = await Class.find({
-            classId: { $in: SUBJECTS.flatMap(s => GROUPS.map(g => `${s.code}-${g}`)) }
-        }).lean();
+        // Only fetch classes owned by this teacher
+        const allClasses = await Class.find({ teacher: req.user._id }).lean();
 
         const classMap = {};
         allClasses.forEach(c => { classMap[c.classId] = c; });
@@ -415,7 +413,11 @@ router.get('/group-subject-daily/:subjectCode', auth, authorize('teacher'), asyn
         const subjectCode = req.params.subjectCode.toUpperCase();
 
         const classIds = GROUPS.map(g => `${subjectCode}-${g}`);
-        const classDocs = await Class.find({ classId: { $in: classIds } }).lean();
+        // Only classes owned by this teacher
+        const classDocs = await Class.find({ classId: { $in: classIds }, teacher: req.user._id }).lean();
+        if (classDocs.length === 0) {
+            return res.status(403).json({ message: 'You do not teach this subject' });
+        }
         const classMap = {};
         classDocs.forEach(c => { classMap[c.classId] = c; });
 
@@ -493,7 +495,11 @@ router.get('/group-day-pies/:subjectCode/:date', auth, authorize('teacher'), asy
         const endOfDay   = new Date(dateStr + 'T23:59:59.999Z');
 
         const classIds = GROUPS.map(g => `${subjectCode}-${g}`);
-        const classDocs = await Class.find({ classId: { $in: classIds } }).lean();
+        // Only classes owned by this teacher
+        const classDocs = await Class.find({ classId: { $in: classIds }, teacher: req.user._id }).lean();
+        if (classDocs.length === 0) {
+            return res.status(403).json({ message: 'You do not teach this subject' });
+        }
         const classMap = {};
         classDocs.forEach(c => { classMap[c.classId] = c; });
 

@@ -368,7 +368,7 @@ const PersonalTab = ({ summary, total, pct, pieData, trendData, sortedRecords })
                                 const bg = rec.status === 'Present' ? 'bg-emerald-500' : rec.status === 'Late' ? 'bg-amber-500' : 'bg-rose-500';
                                 return (
                                     <div key={i} title={`${date.toLocaleDateString()} — ${rec.status}`}
-                                        className={`${bg} rounded-lg aspect-square flex flex-col items-center justify-center text-white shadow cursor-default hover:scale-110 transition-transform`}>
+                                        className={`${bg} rounded-lg aspect-square flex flex-col items-center justify-center text-white shadow cursor-default`}>
                                         <p className="text-[10px] font-bold leading-none">{date.getDate()}</p>
                                         <p className="text-[9px] opacity-80">{date.toLocaleDateString('en-GB', { month: 'short' })}</p>
                                     </div>

@@ -185,12 +185,16 @@ router.get('/active/:classId', auth, async (req, res) => {
 
 // @route   GET /api/sessions/history/:classId
 // @desc    Get session history for class
-// @access  Teacher
+// @access  Teacher (own classes only)
 router.get('/history/:classId', auth, authorize('teacher'), async (req, res) => {
     try {
         const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() });
         if (!classDoc) {
             return res.status(404).json({ message: 'Class not found' });
+        }
+
+        if (classDoc.teacher.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Access denied: not your class' });
         }
 
         const sessions = await Session.find({ class: classDoc._id })

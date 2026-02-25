@@ -41,7 +41,11 @@ const STUDENT_NAMES = {
         'Tanya Chaudhary', 'Umesh Desai', 'Vidya Krishnan', 'Waqar Mirza', 'Younus Ahmed'],
 };
 
-const ROLL_BASES = { G18: 2218000, G19: 2219000, G20: 2220000, G21: 2221000, G22: 2222000 };
+// ── Group Classification Strategy ──────────────────────────────────────────
+// We classify groups based on Roll Number prefixes.
+// G18 students = 2218xxxx, G19 students = 2219xxxx, etc.
+// This ensures unique identification without needing 'group' in the email.
+const ROLL_BASES = { G18: 2410181000, G19: 2410191000, G20: 2410201000, G21: 2410211000, G22: 2410221000 };
 
 function randomStatus() {
     const r = Math.random();
@@ -107,11 +111,11 @@ async function main() {
 
         const studentDocs = names.map((name, i) => {
             const firstName = name.split(' ')[0].toLowerCase();
-            const roll = String(ROLL_BASES[group] + i + 1).padStart(10, '0');
+            const roll = String(ROLL_BASES[group] + i + 1);
             return {
                 _id: ids[i],
                 name,
-                email: `${firstName}.${group.toLowerCase()}@${DOMAIN}`,
+                email: `${firstName}.${roll}@${DOMAIN}`,
                 password: hashed,
                 role: 'student',
                 rollNumber: roll,
@@ -128,8 +132,8 @@ async function main() {
     }
 
     // ── Classes ────────────────────────────────────────────────────────────────
-    const semStart = new Date('2025-01-06');
-    const semEnd = new Date('2025-06-30');
+    const semStart = new Date('2026-01-06');
+    const semEnd = new Date('2026-06-30');
     const classMap = {}; // classId → { _id, studentIds, teacherId }
 
     const classDocs = [];
@@ -138,6 +142,7 @@ async function main() {
         for (const group of GROUPS) {
             const cid = new ObjectId();
             const classId = `${sub.code}-${group}`;
+            // Create a Class instance linking ONE Subject Teacher to ONE Student Group
             classDocs.push({
                 _id: cid,
                 classId,
@@ -231,11 +236,14 @@ async function main() {
     console.log('  ALL ACCOUNTS — Password: Student@123');
     console.log('═══════════════════════════════════════════════════════════════');
     console.log('\n TEACHERS (5):');
+    console.log('\n TEACHERS (5) - Login to see only your assigned subject classes:');
     SUBJECTS.forEach(s => console.log(`   teacher.${s.code.toLowerCase()}@${DOMAIN}  →  ${s.name}`));
     console.log('\n STUDENTS (50 total, sample login per group):');
     GROUPS.forEach(g => {
-        const n = STUDENT_NAMES[g][0].split(' ')[0].toLowerCase();
-        console.log(`   ${n}.${g.toLowerCase()}@${DOMAIN}  →  Group ${g}`);
+        const base = ROLL_BASES[g];
+        const sampleRoll = String(base + 1);
+        const firstName = STUDENT_NAMES[g][0].split(' ')[0].toLowerCase();
+        console.log(`   ${firstName}.${sampleRoll}@${DOMAIN}  →  Group ${g} (Roll: ${sampleRoll})`);
     });
     console.log('\n═══════════════════════════════════════════════════════════════\n');
 
