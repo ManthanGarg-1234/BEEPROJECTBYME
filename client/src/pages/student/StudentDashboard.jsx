@@ -306,15 +306,20 @@ const ClassCard = ({ cls, colors, isFocused }) => {
         <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${colors.gradient} p-[1px] ${colors.shadow} shadow-lg ${isFocused ? 'ring-2 ring-cyan-300/70 scale-[1.01]' : ''}`}>
             <div className="bg-white dark:bg-dark-800 rounded-[15px] relative overflow-hidden">
                 {/* Colorful Header Bar */}
-                <div className={`bg-gradient-to-r ${colors.gradient} px-6 py-4`}>
+                <div className={`bg-gradient-to-r ${colors.gradient} px-4 sm:px-6 py-4`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white text-lg font-bold">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 flex items-center justify-center text-white text-base sm:text-lg font-bold shrink-0">
                                 {cls.classId.substring(0, 3)}
                             </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-white">{cls.subject}</h2>
-                                <p className="text-white/70 text-sm">{cls.classId} • {cls.teacher}</p>
+                            <div className="min-w-0">
+                                <h2 className="text-base sm:text-lg font-bold text-white truncate">{cls.subject}</h2>
+                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/20 text-white text-xs font-mono font-semibold">
+                                        🆔 {cls.classId}
+                                    </span>
+                                    <span className="text-white/70 text-xs truncate">{cls.teacher}</span>
+                                </div>
                             </div>
                         </div>
                         {/* Percentage Ring */}

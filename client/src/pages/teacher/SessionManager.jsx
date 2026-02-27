@@ -111,7 +111,7 @@ const SessionManager = () => {
             {!activeSession ? (
                 <div className="max-w-lg mx-auto">
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 to-orange-400 p-[1px] shadow-lg shadow-amber-500/15">
-                        <div className="bg-white dark:bg-dark-800 rounded-[15px] p-8 relative overflow-hidden">
+                        <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 sm:p-8 relative overflow-hidden">
 
                             <div className="text-center mb-6 relative">
                                 <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-xl shadow-amber-500/25 mb-4">
@@ -142,8 +142,16 @@ const SessionManager = () => {
                                     <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Class</label>
                                     <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}
                                         className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-dark-700 border-2 border-gray-200 dark:border-dark-600 text-gray-800 dark:text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all">
-                                        {classes.map(c => <option key={c._id} value={c.classId}>{c.classId} - {c.subject}</option>)}
+                                        {classes.map(c => <option key={c._id} value={c.classId}>{c.classId} — {c.subject}</option>)}
                                     </select>
+                                    {selectedClass && (
+                                        <div className="mt-2 flex items-center gap-2">
+                                            <span className="text-xs text-gray-400">Selected Class ID:</span>
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-semibold">
+                                                🆔 {selectedClass}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1.5">
@@ -168,13 +176,16 @@ const SessionManager = () => {
 
                             {/* Status Badge */}
                             <div className="mb-6 relative">
-                                <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border border-emerald-200 dark:border-emerald-700/40">
+                                <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/30 border border-emerald-200 dark:border-emerald-700/40">
                                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
                                     <span className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">Session Active</span>
                                 </div>
-                                <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">{activeSession.classId} — {activeSession.subject}</p>
-                            </div>
-
+                                <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-sm font-mono font-bold">
+                                        🆔 {activeSession.classId}
+                                    </span>
+                                    <span className="text-gray-400 dark:text-gray-400 text-sm font-medium">{activeSession.subject}</span>
+                                </div>
                             {/* Timer */}
                             <div className={`mb-6 p-6 rounded-2xl relative ${windowClosed
                                 ? 'bg-gradient-to-r from-rose-50 to-red-50 dark:from-rose-900/20 dark:to-red-900/20 border border-rose-200 dark:border-rose-800/30'
@@ -204,7 +215,7 @@ const SessionManager = () => {
                                 </div>
                             )}
 
-                            <div className="flex gap-3 relative">
+                            <div className="flex flex-col sm:flex-row gap-3 relative">
                                 <button onClick={() => navigate(`/teacher/session/${activeSession._id}/live`)}
                                     className="flex-1 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-md shadow-blue-500/15">
                                     📊 Live Attendance

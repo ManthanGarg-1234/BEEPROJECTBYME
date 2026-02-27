@@ -26,11 +26,11 @@ const fmt   = (d) => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', m
 const pctColor = (p) => p >= 75 ? '#10b981' : p >= 65 ? '#f59e0b' : '#ef4444';
 
 const StatCard = ({ label, value, color, icon }) => (
-    <div className="glass-card-solid p-4 flex items-center gap-3 border-l-4" style={{ borderColor: color }}>
-        <span className="text-2xl">{icon}</span>
-        <div>
-            <p className="text-xl font-extrabold" style={{ color }}>{value}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+    <div className="glass-card-solid p-3 sm:p-4 flex items-center gap-3 border-l-4" style={{ borderColor: color }}>
+        <span className="text-xl sm:text-2xl">{icon}</span>
+        <div className="min-w-0">
+            <p className="text-lg sm:text-xl font-extrabold" style={{ color }}>{value}</p>
+            <p className="text-xs text-gray-400 mt-0.5 truncate">{label}</p>
         </div>
     </div>
 );
@@ -193,32 +193,37 @@ const AttendanceReport = () => {
 
     /* ── subject selector bar (only teacher's subjects) ────────────────── */
     const SubjectBar = () => (
-        <div className="flex flex-wrap gap-2 mb-6">
-            {mySubjects.map(s => (
-                <button key={s.code} onClick={() => setSubCode(s.code)}
-                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 flex items-center gap-2
-                        ${subCode === s.code
-                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-purple-500/30'
-                            : 'glass-card-solid text-slate-300 hover:text-white'}`}>
-                    <span>{s.icon}</span>{s.name}
-                </button>
-            ))}
+        <div className="overflow-x-auto pb-1 -mx-1 px-1 mb-6">
+            <div className="flex gap-2 min-w-max">
+                {mySubjects.map(s => (
+                    <button key={s.code} onClick={() => setSubCode(s.code)}
+                        className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center gap-2 whitespace-nowrap
+                            ${subCode === s.code
+                                ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-purple-500/30'
+                                : 'glass-card-solid text-slate-300 hover:text-white'}`}>
+                        <span>{s.icon}</span>{s.name}
+                        <span className="font-mono text-[10px] opacity-60">{s.code}</span>
+                    </button>
+                ))}
+            </div>
         </div>
     );
 
     /* ── main tab bar ────────────────────────────────────────────────────── */
     const MainTabBar = () => (
-        <div className="flex flex-wrap gap-2 mb-6">
-            {[
-                { id: 'overview', label: '📊 Overview' },
-                { id: 'daily',    label: '📅 Daily Breakdown' },
-                { id: 'compare',  label: '🔀 Compare Groups' },
-                { id: 'heatmap',  label: '🌡 Heatmap' },
-            ].map(t => <TabBtn key={t.id} active={mainTab === t.id} onClick={() => setMainTab(t.id)}>{t.label}</TabBtn>)}
-            <button onClick={exportCSV}
-                className="ml-auto px-4 py-2 rounded-xl text-sm font-semibold glass-card-solid text-slate-300 hover:text-white transition-all">
-                📥 CSV
-            </button>
+        <div className="overflow-x-auto pb-1 -mx-1 px-1 mb-6">
+            <div className="flex gap-2 min-w-max">
+                {[
+                    { id: 'overview', label: '📊 Overview' },
+                    { id: 'daily',    label: '📅 Daily Breakdown' },
+                    { id: 'compare',  label: '🔀 Compare Groups' },
+                    { id: 'heatmap',  label: '🌡 Heatmap' },
+                ].map(t => <TabBtn key={t.id} active={mainTab === t.id} onClick={() => setMainTab(t.id)}>{t.label}</TabBtn>)}
+                <button onClick={exportCSV}
+                    className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold glass-card-solid text-slate-300 hover:text-white transition-all whitespace-nowrap">
+                    📥 CSV
+                </button>
+            </div>
         </div>
     );
 
@@ -248,19 +253,19 @@ const AttendanceReport = () => {
                 </div>
 
                 {/* Per-group cards with mini pie */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
                     {GROUPS.map(g => {
                         const d = subMatrix[g];
                         if (!d) return null;
                         const p = d.pct;
                         return (
-                            <div key={g} className="glass-card-solid p-4 rounded-2xl border border-slate-700/50">
+                            <div key={g} className="glass-card-solid p-3 sm:p-4 rounded-2xl border border-slate-700/50">
                                 <div className="flex items-center justify-between mb-1">
-                                    <span className="font-extrabold text-lg" style={{ color: GROUP_COLORS[g] }}>{g}</span>
+                                    <span className="font-extrabold text-base sm:text-lg" style={{ color: GROUP_COLORS[g] }}>{g}</span>
                                     <span className="text-xs px-2 py-0.5 rounded-full text-white font-bold"
                                         style={{ background: pctColor(p) }}>{p}%</span>
                                 </div>
-                                <p className="text-xs text-slate-400 mb-3">{d.totalStudents} students · {d.totalSessions} sessions</p>
+                                <p className="text-xs text-slate-400 mb-2 sm:mb-3">{d.totalStudents} students · {d.totalSessions} sessions</p>
                                 <MiniDoughnut present={d.present} late={d.late} absent={d.absent} />
                                 <div className="flex justify-around text-xs mt-2">
                                     <span className="text-emerald-400 font-bold">{d.present} P</span>
@@ -522,26 +527,26 @@ const AttendanceReport = () => {
                 )}
 
                 {/* Table: cross-subject summary */}
-                <div className="glass-card-solid p-6 rounded-2xl">
+                <div className="glass-card-solid p-5 sm:p-6 rounded-2xl">
                     <h3 className="text-sm font-semibold text-slate-300 mb-4">📋 Attendance % Matrix — Group × Subject</h3>
-                    <div className="overflow-x-auto rounded-xl">
-                        <table className="w-full text-sm">
+                    <div className="overflow-x-auto rounded-xl -mx-1">
+                        <table className="w-full text-sm min-w-[400px]">
                             <thead>
                                 <tr className="bg-slate-800/60">
-                                    <th className="text-left py-3 px-4 text-slate-400 font-medium sticky left-0 bg-slate-800/60 z-10 min-w-[80px]">Group</th>
+                                    <th className="text-left py-3 px-3 sm:px-4 text-slate-400 font-medium sticky left-0 bg-slate-800/60 z-10 min-w-[70px]">Group</th>
                                     {ALL_SUBJECTS.map(s => (
-                                        <th key={s.code} className="text-center py-3 px-3 text-slate-400 font-medium whitespace-nowrap">{s.icon} {s.code}</th>
+                                        <th key={s.code} className="text-center py-3 px-2 sm:px-3 text-slate-400 font-medium whitespace-nowrap">{s.icon} {s.code}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
                                 {GROUPS.map(g => (
                                     <tr key={g} className="border-t border-slate-800/50 hover:bg-slate-800/30 transition-colors">
-                                        <td className="py-3 px-4 font-extrabold sticky left-0 bg-slate-900/80 z-10" style={{ color: GROUP_COLORS[g] }}>{g}</td>
+                                        <td className="py-3 px-3 sm:px-4 font-extrabold sticky left-0 bg-slate-900/80 z-10" style={{ color: GROUP_COLORS[g] }}>{g}</td>
                                         {ALL_SUBJECTS.map(s => {
                                             const p = overview?.matrix?.[s.code]?.[g]?.pct ?? null;
                                             return (
-                                                <td key={s.code} className="py-3 px-3 text-center">
+                                                <td key={s.code} className="py-3 px-2 sm:px-3 text-center">
                                                     {p !== null
                                                         ? <span className="font-bold" style={{ color: pctColor(p) }}>{p}%</span>
                                                         : <span className="text-slate-600">—</span>}
@@ -592,16 +597,21 @@ const AttendanceReport = () => {
                 {loadingHeat ? <Skeleton h={300} /> : !heatmapData?.students?.length ? (
                     <NoData msg="No heatmap data." />
                 ) : (
-                    <div className="glass-card-solid p-6 rounded-2xl">
-                        <h3 className="font-semibold text-white mb-4">🌡 Attendance Heatmap — {heatmapClass}</h3>
-                        <div className="overflow-x-auto">
+                    <div className="glass-card-solid p-4 sm:p-6 rounded-2xl">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+                            <h3 className="font-semibold text-white">🌡 Attendance Heatmap</h3>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono font-semibold">
+                                🆔 {heatmapClass}
+                            </span>
+                        </div>
+                        <div className="overflow-x-auto -mx-1">
                             <table className="text-xs min-w-max">
                                 <thead>
                                     <tr>
-                                        <th className="py-2 px-3 text-left text-slate-400 font-medium sticky left-0 bg-slate-900 z-10 min-w-[160px]">Student</th>
+                                        <th className="py-2 px-3 text-left text-slate-400 font-medium sticky left-0 bg-slate-900 z-10 min-w-[140px] sm:min-w-[160px]">Student</th>
                                         {heatmapData.dates?.map((d, i) => (
                                             <th key={i} className="py-2 px-1 text-center text-slate-500 font-medium"
-                                                style={{ writingMode: 'vertical-lr', minWidth: 28 }}>
+                                                style={{ writingMode: 'vertical-lr', minWidth: 24 }}>
                                                 {d.substring(5)}
                                             </th>
                                         ))}
@@ -622,7 +632,7 @@ const AttendanceReport = () => {
                                                 </td>
                                                 {s.sessions.map((sess, j) => (
                                                     <td key={j} className="py-2 px-1 text-center" title={`${sess.date}: ${sess.status}`}>
-                                                        <div className={`w-5 h-5 rounded-sm mx-auto ${getStatusColor(sess.status)}`}></div>
+                                                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-sm mx-auto ${getStatusColor(sess.status)}`}></div>
                                                     </td>
                                                 ))}
                                                 <td className="py-2 px-3 text-center font-bold" style={{ color: pctColor(pct) }}>{pct}%</td>
@@ -632,7 +642,7 @@ const AttendanceReport = () => {
                                 </tbody>
                             </table>
                         </div>
-                        <div className="flex items-center gap-6 mt-4 text-xs text-slate-400">
+                        <div className="flex items-center gap-4 sm:gap-6 mt-4 text-xs text-slate-400 flex-wrap">
                             <span className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-green-500 inline-block"></span>Present</span>
                             <span className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-yellow-500 inline-block"></span>Late</span>
                             <span className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-red-500/30 inline-block"></span>Absent</span>
@@ -646,18 +656,32 @@ const AttendanceReport = () => {
     /* ── current subject info ────────────────────────────────────────────── */
     const curSub = ALL_SUBJECTS.find(s => s.code === subCode);
 
+    // Classes for current subject
+    const curSubClasses = myClasses.filter(c => c.classId.split('-')[0] === subCode);
+
     return (
         <div className="page-container">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
                 <div>
-                    <h1 className="text-3xl font-extrabold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                         Attendance Analytics
                     </h1>
                     <p className="text-slate-400 mt-1 text-sm">
-                        {curSub?.icon} {curSub?.name} · Groups G18–G22 · 22 days of data
+                        {curSub?.icon} {curSub?.name} · Viewing class data
                     </p>
                 </div>
+                {/* Active class badges */}
+                {curSubClasses.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                        {curSubClasses.map(c => (
+                            <span key={c.classId}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono font-semibold">
+                                🆔 {c.classId}
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <SubjectBar />

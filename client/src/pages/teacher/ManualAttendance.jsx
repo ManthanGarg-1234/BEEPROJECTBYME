@@ -98,19 +98,27 @@ const ManualAttendance = () => {
 
     return (
         <div className="page-container">
-            <h1 className="section-title text-3xl mb-2">Manual Attendance</h1>
+            <h1 className="section-title text-2xl sm:text-3xl mb-2">Manual Attendance</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-8">
                 Manually mark or override student attendance
             </p>
 
             {/* Selectors */}
-            <div className="glass-card-solid p-6 mb-8">
+            <div className="glass-card-solid p-4 sm:p-6 mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Class</label>
                         <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} className="input-field">
-                            {classes.map(c => <option key={c._id} value={c.classId}>{c.classId} - {c.subject}</option>)}
+                            {classes.map(c => <option key={c._id} value={c.classId}>{c.classId} — {c.subject}</option>)}
                         </select>
+                        {selectedClass && (
+                            <div className="mt-2 flex items-center gap-2">
+                                <span className="text-xs text-gray-400">Class ID:</span>
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-500/10 border border-violet-500/30 text-violet-400 text-xs font-mono font-semibold">
+                                    🆔 {selectedClass}
+                                </span>
+                            </div>
+                        )}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">Session</label>

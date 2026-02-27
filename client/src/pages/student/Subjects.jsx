@@ -188,12 +188,17 @@ const Subjects = () => {
                                             <div className={`bg-gradient-to-r ${colors.gradient} px-5 py-4`}>
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white text-lg font-bold">
+                                                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 flex items-center justify-center text-white text-base sm:text-lg font-bold shrink-0">
                                                             {cls.classId.substring(0, 3)}
                                                         </div>
-                                                        <div>
-                                                            <h2 className="text-base font-bold text-white leading-tight">{cls.subject}</h2>
-                                                            <p className="text-white/70 text-xs mt-0.5">{cls.classId} • {cls.teacher}</p>
+                                                        <div className="min-w-0">
+                                                            <h2 className="text-sm sm:text-base font-bold text-white leading-tight truncate">{cls.subject}</h2>
+                                                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-white/20 text-white text-[10px] font-mono font-bold">
+                                                                    🆔 {cls.classId}
+                                                                </span>
+                                                                <span className="text-white/70 text-[10px] truncate">{cls.teacher}</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     {/* Circular attendance ring */}

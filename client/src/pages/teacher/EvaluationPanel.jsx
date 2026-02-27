@@ -39,9 +39,19 @@ const EvaluationPanel = () => {
             <div className="max-w-2xl mx-auto">
                 <div className="glass-card-solid p-6 mb-8">
                     <div className="flex flex-col sm:flex-row gap-4">
-                        <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} className="input-field flex-1">
-                            {classes.map(c => <option key={c._id} value={c.classId}>{c.classId} - {c.subject}</option>)}
-                        </select>
+                        <div className="flex-1">
+                            <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} className="input-field w-full">
+                                {classes.map(c => <option key={c._id} value={c.classId}>{c.classId} — {c.subject}</option>)}
+                            </select>
+                            {selectedClass && (
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-xs text-gray-400">Class ID:</span>
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono font-semibold">
+                                        🆔 {selectedClass}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                         <button onClick={runEvaluation} disabled={loading} className="btn-primary whitespace-nowrap">
                             {loading ? '⏳ Evaluating...' : '🔍 Run Evaluation'}
                         </button>

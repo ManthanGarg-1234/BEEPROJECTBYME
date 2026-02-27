@@ -11,11 +11,11 @@ import { useAuth } from '../../context/AuthContext';
 const STATUS_COLORS = { Present: '#10b981', Late: '#f59e0b', Absent: '#ef4444' };
 
 const StatCard = ({ label, value, color, icon }) => (
-    <div className={`glass-card-solid p-5 flex items-center gap-4 border-l-4`} style={{ borderColor: color }}>
-        <div className="text-3xl">{icon}</div>
-        <div>
-            <p className="text-2xl font-extrabold" style={{ color }}>{value}</p>
-            <p className="text-xs text-gray-400 font-medium mt-0.5">{label}</p>
+    <div className={`glass-card-solid p-3 sm:p-5 flex items-center gap-3 sm:gap-4 border-l-4`} style={{ borderColor: color }}>
+        <div className="text-2xl sm:text-3xl">{icon}</div>
+        <div className="min-w-0">
+            <p className="text-xl sm:text-2xl font-extrabold" style={{ color }}>{value}</p>
+            <p className="text-xs text-gray-400 font-medium mt-0.5 truncate">{label}</p>
         </div>
     </div>
 );
@@ -179,18 +179,18 @@ const AttendanceReport = () => {
                 <div>
                     {/* ── Header ────────────────────────────────────────────── */}
                     <div className="mb-6">
-                        <div className="flex items-center justify-between gap-4 mb-1">
+                        <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
                                     <span className="text-white text-lg">📈</span>
                                 </div>
-                                <h1 className="text-3xl font-extrabold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                                <h1 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
                                     Attendance Report
                                 </h1>
                             </div>
                             {/* Student photo top-right */}
                             <div className="flex items-center gap-3 rounded-2xl border border-slate-200/20 bg-white/70 dark:bg-dark-800/70 px-3 py-2 shadow-lg shadow-purple-500/5">
-                                <div className="w-11 h-11 rounded-xl overflow-hidden border border-purple-200/60 bg-slate-900/40">
+                                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl overflow-hidden border border-purple-200/60 bg-slate-900/40">
                                     {photoUrl
                                         ? <img src={photoUrl} alt={user?.name} className="w-full h-full object-cover" />
                                         : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-sm font-bold">
@@ -203,24 +203,34 @@ const AttendanceReport = () => {
                                 </div>
                             </div>
                         </div>
-                        <p className="text-gray-500 dark:text-gray-400 ml-[52px]">
-                            {selectedClass ? `${selectedClass.subject} · ${selectedClass.classId}` : 'Select a subject'}
-                        </p>
+                        {/* Subject + classId row */}
+                        <div className="flex items-center gap-2 flex-wrap ml-[52px]">
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">
+                                {selectedClass ? selectedClass.subject : 'Select a subject'}
+                            </p>
+                            {selectedClass && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono font-semibold">
+                                    🆔 {selectedClass.classId}
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {/* ── Tab switcher ───────────────────────────────────────── */}
-                    <div className="flex gap-2 mb-6">
-                        {[
-                            { id: 'personal', label: '🎓 My Analytics' },
-                            { id: 'group', label: '👥 Group Analytics' },
-                        ].map(t => (
-                            <button key={t.id} onClick={() => setActiveTab(t.id)}
-                                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === t.id
-                                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-purple-500/25'
-                                    : 'glass-card-solid text-slate-300 hover:text-white'}`}>
-                                {t.label}
-                            </button>
-                        ))}
+                    <div className="overflow-x-auto pb-1 -mx-1 px-1 mb-6">
+                        <div className="flex gap-2 min-w-max">
+                            {[
+                                { id: 'personal', label: '🎓 My Analytics' },
+                                { id: 'group', label: '👥 Group Analytics' },
+                            ].map(t => (
+                                <button key={t.id} onClick={() => setActiveTab(t.id)}
+                                    className={`px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap ${activeTab === t.id
+                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-purple-500/25'
+                                        : 'glass-card-solid text-slate-300 hover:text-white'}`}>
+                                    {t.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {reportLoading ? (
@@ -516,31 +526,31 @@ const GroupTab = ({ groupDaily, selectedClass }) => {
             </div>
 
             {/* Group daily table */}
-            <div className="glass-card-solid p-6">
+            <div className="glass-card-solid p-4 sm:p-6">
                 <h3 className="font-semibold dark:text-white mb-4">📋 Daily Group Breakdown</h3>
-                <div className="overflow-x-auto rounded-xl">
-                    <table className="w-full text-sm">
+                <div className="overflow-x-auto -mx-1 rounded-xl">
+                    <table className="w-full text-sm min-w-[420px]">
                         <thead>
                             <tr className="bg-slate-800/60">
-                                <th className="text-left py-3 px-4 text-slate-400 font-medium">Date</th>
-                                <th className="text-center py-3 px-4 text-emerald-400 font-medium">Present</th>
-                                <th className="text-center py-3 px-4 text-amber-400 font-medium">Late</th>
-                                <th className="text-center py-3 px-4 text-rose-400 font-medium">Absent</th>
-                                <th className="text-center py-3 px-4 text-slate-400 font-medium">Total</th>
-                                <th className="text-center py-3 px-4 text-indigo-400 font-medium">Att%</th>
+                                <th className="text-left py-3 px-3 sm:px-4 text-slate-400 font-medium whitespace-nowrap">Date</th>
+                                <th className="text-center py-3 px-3 sm:px-4 text-emerald-400 font-medium whitespace-nowrap">Present</th>
+                                <th className="text-center py-3 px-3 sm:px-4 text-amber-400 font-medium whitespace-nowrap">Late</th>
+                                <th className="text-center py-3 px-3 sm:px-4 text-rose-400 font-medium whitespace-nowrap">Absent</th>
+                                <th className="text-center py-3 px-3 sm:px-4 text-slate-400 font-medium whitespace-nowrap">Total</th>
+                                <th className="text-center py-3 px-3 sm:px-4 text-indigo-400 font-medium whitespace-nowrap">Att%</th>
                             </tr>
                         </thead>
                         <tbody>
                             {groupDaily.map((d, i) => (
                                 <tr key={i} className="border-b border-slate-800/60 hover:bg-slate-800/30 transition-colors">
-                                    <td className="py-3 px-4 dark:text-gray-200 font-medium">
+                                    <td className="py-3 px-3 sm:px-4 dark:text-gray-200 font-medium whitespace-nowrap">
                                         {new Date(d.date).toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short' })}
                                     </td>
-                                    <td className="py-3 px-4 text-center font-bold text-emerald-400">{d.present}</td>
-                                    <td className="py-3 px-4 text-center font-bold text-amber-400">{d.late}</td>
-                                    <td className="py-3 px-4 text-center font-bold text-rose-400">{d.absent}</td>
-                                    <td className="py-3 px-4 text-center text-slate-300">{d.total}</td>
-                                    <td className="py-3 px-4 text-center">
+                                    <td className="py-3 px-3 sm:px-4 text-center font-bold text-emerald-400">{d.present}</td>
+                                    <td className="py-3 px-3 sm:px-4 text-center font-bold text-amber-400">{d.late}</td>
+                                    <td className="py-3 px-3 sm:px-4 text-center font-bold text-rose-400">{d.absent}</td>
+                                    <td className="py-3 px-3 sm:px-4 text-center text-slate-300">{d.total}</td>
+                                    <td className="py-3 px-3 sm:px-4 text-center">
                                         <span className={`font-bold ${d.percentage >= 75 ? 'text-emerald-400' : d.percentage >= 65 ? 'text-amber-400' : 'text-rose-400'}`}>
                                             {d.percentage}%
                                         </span>

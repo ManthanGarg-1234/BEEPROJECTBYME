@@ -49,13 +49,20 @@ const BulkEnroll = () => {
                 Back to Classes
             </button>
 
-            <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+            <div className="flex items-center gap-4 mb-8 flex-wrap">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shrink-0">
                     📝
                 </div>
                 <div>
-                    <h1 className="section-title text-3xl">Bulk Enrollment</h1>
-                    {classInfo && <p className="text-gray-500 dark:text-gray-400">{classInfo.classId} - {classInfo.subject}</p>}
+                    <h1 className="section-title text-2xl sm:text-3xl">Bulk Enrollment</h1>
+                    {classInfo && (
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="text-gray-500 dark:text-gray-400 text-sm">{classInfo.subject}</span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-mono font-semibold">
+                                🆔 {classInfo.classId}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 

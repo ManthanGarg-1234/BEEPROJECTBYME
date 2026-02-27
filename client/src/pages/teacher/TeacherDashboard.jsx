@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import api from '../../api';
@@ -19,18 +19,28 @@ const TeacherDashboard = () => {
         { label: 'Reports', path: '/teacher/reports', icon: '📈' },
     ];
 
-    const assignedSubjects = [
-        { code: 'CSE201', name: 'Data Structures & Algorithms', semester: 'III', groups: ['CSE-A', 'CSE-B'] },
-        { code: 'CSE252', name: 'Operating Systems', semester: 'V', groups: ['CSE-B'] },
-        { code: 'CSE341', name: 'Computer Networks', semester: 'VI', groups: ['CSE-A'] },
-        { code: 'CSE368', name: 'DBMS Lab', semester: 'IV', groups: ['CSE-A', 'CSE-C'] },
-    ];
+    // Derive subjects from live class data
+    const assignedSubjects = useMemo(() => {
+        const map = {};
+        classes.forEach(cls => {
+            const key = cls.subject;
+            if (!map[key]) map[key] = { name: cls.subject, classIds: [] };
+            if (!map[key].classIds.includes(cls.classId)) map[key].classIds.push(cls.classId);
+        });
+        return Object.values(map);
+    }, [classes]);
 
-    const assignedGroups = [
-        { group: 'CSE-A', year: '2nd Year', strength: 62, mentor: true },
-        { group: 'CSE-B', year: '2nd Year', strength: 58, mentor: false },
-        { group: 'CSE-C', year: '2nd Year', strength: 55, mentor: false },
-    ];
+    // Derive groups from live class data (extract group part of classId, e.g. "G18" from "CN-G18")
+    const assignedGroups = useMemo(() => {
+        const seen = {};
+        classes.forEach(cls => {
+            const parts = cls.classId.split('-');
+            const group = parts.length > 1 ? parts.slice(1).join('-') : cls.classId;
+            if (!seen[group]) seen[group] = { group, classId: cls.classId, studentCount: 0 };
+            seen[group].studentCount += cls.students?.length || 0;
+        });
+        return Object.values(seen);
+    }, [classes]);
 
     useEffect(() => { fetchClasses(); }, []);
 
@@ -227,19 +237,25 @@ const TeacherDashboard = () => {
 
                     <div className="mb-6">
                         <h3 className="text-sm font-semibold text-slate-200 mb-3">Assigned Subjects</h3>
-                        <div className="space-y-3">
-                            {assignedSubjects.map((subject) => (
-                                <div key={subject.code} className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-3">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-sm font-semibold text-white">{subject.code}</p>
-                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-200">Sem {subject.semester}</span>
-                                    </div>
-                                    <p className="text-xs text-slate-300 mt-1">{subject.name}</p>
+                        <div className="space-y-2">
+                            {assignedSubjects.length === 0 ? (
+                                <p className="text-xs text-slate-500 italic">No classes yet.</p>
+                            ) : assignedSubjects.map((subject) => (
+                                <div key={subject.name} className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-3">
+                                    <p className="text-sm font-semibold text-white truncate">{subject.name}</p>
                                     <div className="flex flex-wrap gap-1 mt-2">
-                                        {subject.groups.map((group) => (
-                                            <span key={group} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-200 border border-slate-700/60">
-                                                {group}
-                                            </span>
+                                        {subject.classIds.map((cid) => (
+                                            <button
+                                                key={cid}
+                                                type="button"
+                                                onClick={() => setSelectedClass(cid)}
+                                                className={`text-[10px] px-2 py-0.5 rounded-full border font-mono transition-all ${
+                                                    selectedClass === cid
+                                                        ? 'bg-cyan-500/20 text-cyan-200 border-cyan-400/50'
+                                                        : 'bg-slate-800 text-slate-300 border-slate-700/60 hover:border-cyan-400/40'
+                                                }`}>
+                                                {cid}
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
@@ -248,18 +264,28 @@ const TeacherDashboard = () => {
                     </div>
 
                     <div>
-                        <h3 className="text-sm font-semibold text-slate-200 mb-3">Allotted Groups</h3>
+                        <h3 className="text-sm font-semibold text-slate-200 mb-3">Allotted Classes</h3>
                         <div className="space-y-2">
-                            {assignedGroups.map((group) => (
-                                <div key={group.group} className="flex items-center justify-between rounded-xl border border-slate-700/60 bg-slate-900/60 px-3 py-2">
+                            {assignedGroups.length === 0 ? (
+                                <p className="text-xs text-slate-500 italic">No classes yet.</p>
+                            ) : assignedGroups.map((item) => (
+                                <button
+                                    key={item.classId}
+                                    type="button"
+                                    onClick={() => setSelectedClass(item.classId)}
+                                    className={`w-full flex items-center justify-between rounded-xl border px-3 py-2 transition-all duration-300 ${
+                                        selectedClass === item.classId
+                                            ? 'border-cyan-300/70 bg-cyan-500/10 text-white'
+                                            : 'border-slate-700/60 bg-slate-900/60 text-slate-200 hover:border-cyan-300/60'
+                                    }`}>
                                     <div>
-                                        <p className="text-sm font-semibold text-white">{group.group}</p>
-                                        <p className="text-xs text-slate-400">{group.year} • {group.strength} students</p>
+                                        <p className="text-sm font-semibold font-mono text-left">{item.classId}</p>
+                                        <p className="text-xs text-slate-400 text-left">{item.studentCount} students</p>
                                     </div>
-                                    {group.mentor && (
-                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-lime-500/10 text-lime-200">Mentor</span>
+                                    {selectedClass === item.classId && (
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-200 shrink-0">Active</span>
                                     )}
-                                </div>
+                                </button>
                             ))}
                         </div>
                     </div>
@@ -300,8 +326,15 @@ const TeacherDashboard = () => {
 
                     {stats && (
                 <>
+                    {/* Selected class indicator */}
+                    <div className="flex items-center gap-2 mb-4 flex-wrap">
+                        <span className="text-xs text-slate-400">Showing data for:</span>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono font-semibold">
+                            🆔 {selectedClass}
+                        </span>
+                    </div>
                     {/* Vibrant Gradient Stat Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8 stagger-children">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-8 stagger-children">
                         {statCards.map((card, i) => (
                             <div key={i} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-[1px] group ${card.shadowColor} shadow-lg`}>
                                 <div className={`bg-white dark:bg-dark-800 rounded-[15px] p-5 h-full relative overflow-hidden`}>
@@ -432,12 +465,12 @@ const TeacherDashboard = () => {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20">
-                                            <th className="text-left py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">Roll No</th>
-                                            <th className="text-left py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">Name</th>
-                                            <th className="text-center py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">Present</th>
-                                            <th className="text-center py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">Total</th>
-                                            <th className="text-center py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">%</th>
-                                            <th className="text-center py-3.5 px-4 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider">Status</th>
+                                                            <th className="text-left py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Roll No</th>
+                                            <th className="text-left py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Name</th>
+                                            <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Present</th>
+                                            <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Total</th>
+                                            <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">%</th>
+                                            <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-dark-700">

@@ -84,10 +84,13 @@ const ClassManagement = () => {
                             </div>
                         )}
                         <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
-                            <div>
+                            <div>                                
                                 <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Class ID</label>
                                 <input value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-dark-700 border-2 border-gray-200 dark:border-dark-600 text-gray-800 dark:text-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all" placeholder="e.g., DSA001" required />
+                                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-dark-700 border-2 border-gray-200 dark:border-dark-600 text-gray-800 dark:text-white focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none transition-all font-mono" placeholder="e.g., CSE201-CSE-A" required />
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                    Unique identifier shown to students and used in reports. Suggested format: <code className="font-mono text-violet-400">SUBJECTCODE-GROUP</code> (e.g., <code className="font-mono text-violet-400">CSE201-CSE-A</code>).
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-600 dark:text-gray-300 mb-1.5">Subject</label>
@@ -119,10 +122,17 @@ const ClassManagement = () => {
                         <div key={cls._id} className={`relative overflow-hidden rounded-2xl bg-gradient-to-r ${colors.gradient} p-[1px] ${colors.shadow} shadow-lg group`}>
                             <div className="bg-white dark:bg-dark-800 rounded-[15px] h-full relative overflow-hidden">
                                 {/* Color header strip */}
-                                <div className={`bg-gradient-to-r ${colors.gradient} px-6 py-4`}>
+                            <div className={`bg-gradient-to-r ${colors.gradient} px-4 sm:px-6 py-4`}>
                                     <div className="flex items-start justify-between">
-                                        <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-lg">
-                                            {cls.classId.substring(0, 2)}
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 flex items-center justify-center text-white font-bold text-base sm:text-lg shrink-0">
+                                                {cls.classId.substring(0, 2)}
+                                            </div>
+                                            <div>
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/20 text-white text-xs font-mono font-bold tracking-wide">
+                                                    🆔 {cls.classId}
+                                                </span>
+                                            </div>
                                         </div>
                                         <button onClick={() => handleDelete(cls._id)}
                                             className="opacity-0 group-hover:opacity-100 p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/20 transition-all">
@@ -133,9 +143,9 @@ const ClassManagement = () => {
                                     </div>
                                 </div>
 
-                                <div className="p-6">
-                                    <h3 className="font-bold text-lg dark:text-white">{cls.classId}</h3>
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">{cls.subject}</p>
+                                <div className="p-4 sm:p-6">
+                                    <h3 className="font-bold text-base sm:text-lg dark:text-white">{cls.subject}</h3>
+                                    <p className="text-gray-400 dark:text-gray-400 text-xs font-mono mt-0.5 mb-3">{cls.classId}</p>
 
                                     <div className="space-y-2.5 text-sm">
                                         <div className="flex justify-between items-center">
