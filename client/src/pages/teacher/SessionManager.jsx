@@ -186,6 +186,7 @@ const SessionManager = () => {
                                     </span>
                                     <span className="text-gray-400 dark:text-gray-400 text-sm font-medium">{activeSession.subject}</span>
                                 </div>
+                            </div>
                             {/* Timer */}
                             <div className={`mb-6 p-6 rounded-2xl relative ${windowClosed
                                 ? 'bg-gradient-to-r from-rose-50 to-red-50 dark:from-rose-900/20 dark:to-red-900/20 border border-rose-200 dark:border-rose-800/30'
