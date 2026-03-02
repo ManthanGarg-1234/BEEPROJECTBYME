@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const User = require('../models/User');
+const Class = require('../models/Class');
 const { auth } = require('../middleware/auth');
 const { registerValidation, loginValidation, changePasswordValidation } = require('../middleware/validators');
 
@@ -38,15 +39,23 @@ const upload = multer({
 });
 
 // Helper to build user response
-const userResponse = (user) => ({
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    rollNumber: user.rollNumber,
-    firstLogin: user.firstLogin,
-    profilePhoto: user.profilePhoto || null
-});
+const userResponse = (user) => {
+    // Derive group from roll number (format 2401GGXXXX → G[GG])
+    let group = null;
+    if (user.role === 'student' && user.rollNumber && /^\d{10}$/.test(user.rollNumber)) {
+        group = `G${user.rollNumber.substring(4, 6)}`;
+    }
+    return {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        rollNumber: user.rollNumber,
+        group,
+        firstLogin: user.firstLogin,
+        profilePhoto: user.profilePhoto || null
+    };
+};
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
@@ -89,6 +98,18 @@ router.post('/register', upload.single('profilePhoto'), registerValidation, asyn
         });
 
         await user.save();
+
+        // Auto-enroll student into all classes of their group
+        // Roll number format: 2401GGXXXX — characters 4-5 are the group number (e.g. "18" → G18)
+        if (role === 'student' && extractedRoll && /^\d{10}$/.test(extractedRoll)) {
+            const groupNum = extractedRoll.substring(4, 6); // e.g. "18"
+            const groupId  = `G${groupNum}`;               // e.g. "G18"
+            await Class.updateMany(
+                { classId: { $regex: new RegExp(`^${groupId}-`, 'i') }, students: { $ne: user._id } },
+                { $push: { students: user._id } }
+            );
+            console.log(`Auto-enrolled ${user.name} (${user.rollNumber}) into group ${groupId} classes`);
+        }
 
         const token = jwt.sign(
             { id: user._id, role: user.role },
