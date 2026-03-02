@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const COLLEGE_DOMAIN = process.env.COLLEGE_DOMAIN || 'abcuniversity.edu';
-const domainPattern = new RegExp(`^[^@\s]+@${COLLEGE_DOMAIN.replace('.', '\.')}$`);
+const domainPattern = new RegExp(`^[^@\\s]+@${COLLEGE_DOMAIN.replace(/\./g, '\\.')}$`);
 
 const userSchema = new mongoose.Schema({
     name: {
