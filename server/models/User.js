@@ -1,9 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const COLLEGE_DOMAIN = process.env.COLLEGE_DOMAIN || 'abcuniversity.edu';
-const domainPattern = new RegExp(`^[^@\\s]+@${COLLEGE_DOMAIN.replace(/\./g, '\\.')}$`);
-
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -17,7 +14,7 @@ const userSchema = new mongoose.Schema({
         unique: true,
         lowercase: true,
         trim: true,
-        match: [domainPattern, `Email must be at ${COLLEGE_DOMAIN}`]
+        match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format']
     },
     password: {
         type: String,
