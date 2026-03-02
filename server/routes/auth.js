@@ -123,6 +123,11 @@ router.post('/register', upload.single('profilePhoto'), registerValidation, asyn
     } catch (error) {
         console.error('Register error:', error);
         if (req.file) fs.unlinkSync(req.file.path);
+        // Return validation errors as 400, not 500
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(e => e.message);
+            return res.status(400).json({ message: messages[0] });
+        }
         res.status(500).json({ message: 'Server error' });
     }
 });
