@@ -175,7 +175,9 @@ const seedGroups = async () => {
 
     const studentEmailMap = {};
     for (const student of allStudents) {
-        const email = `${student.rollNumber}@${process.env.COLLEGE_DOMAIN || 'abcuniversity.edu'}`;
+        // Email format: firstname.rollnumber@domain  e.g. aarav.2401180001@chitkara.edu
+        const firstName = student.name.split(' ')[0].toLowerCase();
+        const email = `${firstName}.${student.rollNumber}@${process.env.COLLEGE_DOMAIN || 'abcuniversity.edu'}`;
         let user = await User.findOne({ email });
         if (!user) {
             const fileName = `${student.rollNumber}.png`;

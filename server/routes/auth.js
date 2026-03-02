@@ -78,9 +78,11 @@ router.post('/register', upload.single('profilePhoto'), registerValidation, asyn
             return res.status(400).json({ message: 'User with this email already exists' });
         }
 
-        // Extract roll number from email if not provided (only if 10 digits)
+        // Extract roll number from email if not provided
+        // Supports: "2410181011@domain" OR "manthan.2410181011@domain" OR "first.last.2410181011@domain"
         const emailLocal = email.split('@')[0];
-        const rollFromEmail = /^\d{10}$/.test(emailLocal) ? emailLocal : undefined;
+        const rollMatch = emailLocal.match(/\d{10}/);
+        const rollFromEmail = rollMatch ? rollMatch[0] : undefined;
         const extractedRoll = rollNumber || rollFromEmail;
 
         if (role === 'student' && !extractedRoll) {
