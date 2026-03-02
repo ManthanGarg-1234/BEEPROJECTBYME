@@ -255,7 +255,7 @@ const seedGroups = async () => {
 
 const sessionSaveAll = async (sessions) => {
     for (const session of sessions) {
-        await session.save();
+        await Session.updateOne({ _id: session._id }, { $set: { attendanceCount: session.attendanceCount } });
     }
 };
 
