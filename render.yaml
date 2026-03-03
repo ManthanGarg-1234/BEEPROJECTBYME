@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: attendease-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      # ── Set these in the Render dashboard (sensitive) ──────────────
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+
+      # ── Non-secret variables (committed) ───────────────────────────
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: JWT_EXPIRE
+        value: 1d
+      - key: CLIENT_URL
+        value: https://beeprojectbyme.vercel.app
+      - key: GPS_RADIUS_METERS
+        value: 1000
+      - key: GPS_ENFORCE
+        value: true
+      - key: COLLEGE_DOMAIN
+        value: chitkara.edu
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
