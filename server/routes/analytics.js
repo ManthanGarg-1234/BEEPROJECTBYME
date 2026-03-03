@@ -20,22 +20,39 @@ router.get('/dashboard/:classId', auth, authorize('teacher'), async (req, res) =
             return res.status(404).json({ message: 'Class not found or you do not have access' });
         }
 
-        // Total sessions
-        const sessions = await Session.find({ class: classDoc._id });
+        // Fetch all sessions once
+        const sessions = await Session.find({ class: classDoc._id }).select('_id').lean();
         const totalSessions = sessions.length;
+        const sessionIds = sessions.map(s => s._id);
 
-        // Calculate per-student stats
-        const studentStats = [];
+        // Single aggregate: count Present per student across all sessions
+        const attAgg = await Attendance.aggregate([
+            { $match: { session: { $in: sessionIds }, class: classDoc._id } },
+            { $group: { _id: { student: '$student', status: '$status' }, count: { $sum: 1 } } }
+        ]);
+
+        // Build a map: studentId -> { Present: n, Late: n }
+        const attMap = {};
+        for (const { _id, count } of attAgg) {
+            const sid = _id.student.toString();
+            if (!attMap[sid]) attMap[sid] = { Present: 0, Late: 0 };
+            if (_id.status === 'Present' || _id.status === 'Late') {
+                attMap[sid][_id.status] = count;
+            }
+        }
+
         let totalPercentage = 0;
         let belowThreshold = 0;
-
-        for (const student of classDoc.students) {
-            const { percentage, presentCount } = await calculateAttendancePercentage(student._id, classDoc._id);
+        const studentStats = classDoc.students.map(student => {
+            const rec = attMap[student._id.toString()] || { Present: 0, Late: 0 };
+            const presentCount = rec.Present;
+            const percentage = totalSessions > 0
+                ? Math.round((presentCount / totalSessions) * 10000) / 100
+                : 100;
             const warningLevel = getWarningLevel(percentage);
             if (percentage < 75) belowThreshold++;
             totalPercentage += percentage;
-
-            studentStats.push({
+            return {
                 _id: student._id,
                 name: student.name,
                 rollNumber: student.rollNumber,
@@ -44,8 +61,8 @@ router.get('/dashboard/:classId', auth, authorize('teacher'), async (req, res) =
                 presentCount,
                 totalSessions,
                 warningLevel
-            });
-        }
+            };
+        });
 
         const avgAttendance = classDoc.students.length > 0
             ? Math.round((totalPercentage / classDoc.students.length) * 100) / 100
@@ -72,30 +89,37 @@ router.get('/dashboard/:classId', auth, authorize('teacher'), async (req, res) =
 // @access  Teacher
 router.get('/daily-chart/:classId', auth, authorize('teacher'), async (req, res) => {
     try {
-        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase(), teacher: req.user._id });
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase(), teacher: req.user._id }).lean();
         if (!classDoc) {
             return res.status(404).json({ message: 'Class not found or you do not have access' });
         }
 
-        const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 });
+        const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 }).lean();
         const totalStudents = classDoc.students.length;
-        const dailyData = [];
+        const sessionIds = sessions.map(s => s._id);
 
-        for (const session of sessions) {
-            const presentCount = await Attendance.countDocuments({
-                session: session._id,
-                status: 'Present'
-            });
-            const lateCount = await Attendance.countDocuments({
-                session: session._id,
-                status: 'Late'
-            });
+        // Single aggregation: count by session + status
+        const attAgg = await Attendance.aggregate([
+            { $match: { session: { $in: sessionIds } } },
+            { $group: { _id: { session: '$session', status: '$status' }, count: { $sum: 1 } } }
+        ]);
 
+        // Build map: sessionId -> { Present, Late }
+        const attMap = {};
+        for (const { _id, count } of attAgg) {
+            const k = _id.session.toString();
+            if (!attMap[k]) attMap[k] = { Present: 0, Late: 0 };
+            if (_id.status === 'Present' || _id.status === 'Late') attMap[k][_id.status] = count;
+        }
+
+        const dailyData = sessions.map(session => {
+            const k = session._id.toString();
+            const presentCount = attMap[k]?.Present || 0;
+            const lateCount = attMap[k]?.Late || 0;
             const percentage = totalStudents > 0
                 ? Math.round((presentCount / totalStudents) * 10000) / 100
                 : 0;
-
-            dailyData.push({
+            return {
                 date: session.startTime.toISOString().split('T')[0],
                 sessionId: session._id,
                 present: presentCount,
@@ -103,8 +127,8 @@ router.get('/daily-chart/:classId', auth, authorize('teacher'), async (req, res)
                 absent: totalStudents - presentCount - lateCount,
                 total: totalStudents,
                 percentage
-            });
-        }
+            };
+        });
 
         res.json(dailyData);
     } catch (error) {
@@ -245,51 +269,69 @@ router.post('/evaluate/:classId', auth, authorize('teacher'), async (req, res) =
 // @access  Student
 router.get('/student-dashboard', auth, authorize('student'), async (req, res) => {
     try {
+        const studentId = req.user._id;
+
         // Get all classes the student is enrolled in
-        const classes = await Class.find({ students: req.user._id })
-            .populate('teacher', 'name');
+        const classes = await Class.find({ students: studentId }).populate('teacher', 'name').lean();
 
-        const classData = [];
+        if (!classes.length) {
+            return res.json({ student: { name: req.user.name, email: req.user.email, rollNumber: req.user.rollNumber }, classes: [] });
+        }
 
-        for (const cls of classes) {
-            const { percentage, totalSessions, presentCount } = await calculateAttendancePercentage(req.user._id, cls._id);
+        const classIds = classes.map(c => c._id);
+
+        // 1 query: all sessions for all enrolled classes
+        const allSessions = await Session.find({ class: { $in: classIds } }).sort({ startTime: 1 }).lean();
+
+        // 1 query: all attendance records for this student across all enrolled classes
+        const allAttendance = await Attendance.find({ student: studentId, class: { $in: classIds } })
+            .select('session class status').lean();
+
+        // Build fast lookup maps
+        const sessionsByClass = {}; // classId_str -> [session]
+        for (const s of allSessions) {
+            const k = s.class.toString();
+            if (!sessionsByClass[k]) sessionsByClass[k] = [];
+            sessionsByClass[k].push(s);
+        }
+
+        const attBySession = {}; // sessionId_str -> status
+        for (const a of allAttendance) {
+            attBySession[a.session.toString()] = a.status;
+        }
+
+        const classData = classes.map(cls => {
+            const k = cls._id.toString();
+            const sessions = sessionsByClass[k] || [];
+            const totalSessions = sessions.length;
+
+            let presentCount = 0;
+            const attendanceTimeline = sessions.map(session => {
+                const status = attBySession[session._id.toString()] || 'Absent';
+                if (status === 'Present') presentCount++;
+                return { date: session.startTime.toISOString().split('T')[0], status };
+            });
+
+            const percentage = totalSessions > 0
+                ? Math.round((presentCount / totalSessions) * 10000) / 100
+                : 100;
             const warningLevel = getWarningLevel(percentage);
 
-            // Get session-wise attendance
-            const sessions = await Session.find({ class: cls._id }).sort({ startTime: 1 });
-            const attendanceTimeline = [];
-
-            for (const session of sessions) {
-                const att = await Attendance.findOne({
-                    session: session._id,
-                    student: req.user._id
-                });
-
-                attendanceTimeline.push({
-                    date: session.startTime.toISOString().split('T')[0],
-                    status: att ? att.status : 'Absent'
-                });
-            }
-
-            classData.push({
+            return {
                 classId: cls.classId,
                 subject: cls.subject,
-                teacher: cls.teacher.name,
+                teacher: cls.teacher?.name || 'Unknown',
                 percentage,
                 presentCount,
                 totalSessions,
                 warningLevel,
                 semesterProgress: cls.semesterProgress,
                 attendanceTimeline
-            });
-        }
+            };
+        });
 
         res.json({
-            student: {
-                name: req.user.name,
-                email: req.user.email,
-                rollNumber: req.user.rollNumber
-            },
+            student: { name: req.user.name, email: req.user.email, rollNumber: req.user.rollNumber },
             classes: classData
         });
     } catch (error) {
@@ -303,30 +345,43 @@ router.get('/student-dashboard', auth, authorize('student'), async (req, res) =>
 // @access  Student (must be enrolled)
 router.get('/class-daily/:classId', auth, authorize('student'), async (req, res) => {
     try {
-        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() });
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() }).lean();
         if (!classDoc) return res.status(404).json({ message: 'Class not found' });
 
         // verify student is enrolled
         const enrolled = classDoc.students.some(s => s.toString() === req.user._id.toString());
         if (!enrolled) return res.status(403).json({ message: 'Not enrolled in this class' });
 
-        const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 });
+        const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 }).lean();
         const totalStudents = classDoc.students.length;
+        const sessionIds = sessions.map(s => s._id);
 
-        const daily = await Promise.all(sessions.map(async (session) => {
-            const present = await Attendance.countDocuments({ session: session._id, status: 'Present' });
-            const late = await Attendance.countDocuments({ session: session._id, status: 'Late' });
+        // Single aggregation instead of 2 countDocuments per session
+        const attAgg = await Attendance.aggregate([
+            { $match: { session: { $in: sessionIds } } },
+            { $group: { _id: { session: '$session', status: '$status' }, count: { $sum: 1 } } }
+        ]);
+
+        const attMap = {};
+        for (const { _id, count } of attAgg) {
+            const k = _id.session.toString();
+            if (!attMap[k]) attMap[k] = { Present: 0, Late: 0 };
+            if (_id.status === 'Present' || _id.status === 'Late') attMap[k][_id.status] = count;
+        }
+
+        const daily = sessions.map(session => {
+            const k = session._id.toString();
+            const present = attMap[k]?.Present || 0;
+            const late = attMap[k]?.Late || 0;
             const absent = totalStudents - present - late;
             const pct = totalStudents > 0 ? Math.round((present / totalStudents) * 1000) / 10 : 0;
             return {
                 date: session.startTime.toISOString().split('T')[0],
-                present,
-                late,
-                absent,
+                present, late, absent,
                 total: totalStudents,
                 percentage: pct,
             };
-        }));
+        });
 
         res.json({ totalStudents, daily });
     } catch (err) {
@@ -342,11 +397,11 @@ router.get('/group-overview', auth, authorize('teacher'), async (req, res) => {
     try {
         const GROUPS = ['G18', 'G19', 'G20', 'G21', 'G22'];
         const SUBJECTS = [
-            { code: 'CN',     name: 'Computer Networks' },
-            { code: 'BE',     name: 'Backend Engineering' },
+            { code: 'CN', name: 'Computer Networks' },
+            { code: 'BE', name: 'Backend Engineering' },
             { code: 'DSOOPS', name: 'DSOOPS' },
-            { code: 'LINUX',  name: 'Linux Administration' },
-            { code: 'DM',     name: 'Discrete Mathematics' },
+            { code: 'LINUX', name: 'Linux Administration' },
+            { code: 'DM', name: 'Discrete Mathematics' },
         ];
 
         // Only fetch classes owned by this teacher
@@ -389,10 +444,10 @@ router.get('/group-overview', auth, authorize('teacher'), async (req, res) => {
                 const totalSessions = (sessionMap[k] || []).length;
                 const totalStudents = cls.students.length;
                 const present = attMap[k]?.Present || 0;
-                const late    = attMap[k]?.Late    || 0;
+                const late = attMap[k]?.Late || 0;
                 const totalSlots = totalStudents * totalSessions;
-                const absent  = totalSlots - present - late;
-                const pct     = totalSlots > 0 ? Math.round(((present + late) / totalSlots) * 1000) / 10 : 0;
+                const absent = totalSlots - present - late;
+                const pct = totalSlots > 0 ? Math.round(((present + late) / totalSlots) * 1000) / 10 : 0;
                 matrix[sub.code][group] = { present, late, absent, total: totalSlots, totalSessions, totalStudents, pct };
             }
         }
@@ -467,10 +522,10 @@ router.get('/group-subject-daily/:subjectCode', auth, authorize('teacher'), asyn
             if (!cls) return;
             const totalStudents = cls.students.length;
             const present = attBySess[sk]?.Present || 0;
-            const late    = attBySess[sk]?.Late    || 0;
-            const absent  = totalStudents - present - late;
-            const pct     = totalStudents > 0 ? Math.round(((present + late) / totalStudents) * 1000) / 10 : 0;
-            const dateStr  = sess.startTime.toISOString().split('T')[0];
+            const late = attBySess[sk]?.Late || 0;
+            const absent = totalStudents - present - late;
+            const pct = totalStudents > 0 ? Math.round(((present + late) / totalStudents) * 1000) / 10 : 0;
+            const dateStr = sess.startTime.toISOString().split('T')[0];
             dateSet.add(dateStr);
             result[group].push({ date: dateStr, present, late, absent, total: totalStudents, pct });
         });
@@ -492,7 +547,7 @@ router.get('/group-day-pies/:subjectCode/:date', auth, authorize('teacher'), asy
         const subjectCode = req.params.subjectCode.toUpperCase();
         const dateStr = req.params.date;
         const startOfDay = new Date(dateStr + 'T00:00:00.000Z');
-        const endOfDay   = new Date(dateStr + 'T23:59:59.999Z');
+        const endOfDay = new Date(dateStr + 'T23:59:59.999Z');
 
         const classIds = GROUPS.map(g => `${subjectCode}-${g}`);
         // Only classes owned by this teacher
@@ -535,9 +590,9 @@ router.get('/group-day-pies/:subjectCode/:date', auth, authorize('teacher'), asy
             const sk = sess._id.toString();
             const totalStudents = cls.students.length;
             const present = attBySess[sk]?.Present || 0;
-            const late    = attBySess[sk]?.Late    || 0;
-            const absent  = totalStudents - present - late;
-            const pct     = totalStudents > 0 ? Math.round(((present + late) / totalStudents) * 1000) / 10 : 0;
+            const late = attBySess[sk]?.Late || 0;
+            const absent = totalStudents - present - late;
+            const pct = totalStudents > 0 ? Math.round(((present + late) / totalStudents) * 1000) / 10 : 0;
             pies[group] = { present, late, absent, total: totalStudents, pct };
         }
 

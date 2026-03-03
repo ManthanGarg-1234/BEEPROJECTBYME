@@ -49,8 +49,14 @@ const attendanceSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Compound index: one attendance per student per session
+// Compound index: one attendance per student per session (prevents duplicates)
 attendanceSchema.index({ session: 1, student: 1 }, { unique: true });
+// Fast lookups: class+student (student dashboard), class alone (analytics aggregations)
 attendanceSchema.index({ class: 1, student: 1 });
+attendanceSchema.index({ class: 1, status: 1 });        // cron job & teacher analytics
+attendanceSchema.index({ session: 1, status: 1 });       // daily-chart & group-subject-daily analytics
+attendanceSchema.index({ session: 1, deviceId: 1 });     // duplicate device check in /mark
+attendanceSchema.index({ markedAt: -1 });                // sort on student history
 
 module.exports = mongoose.model('Attendance', attendanceSchema);
+

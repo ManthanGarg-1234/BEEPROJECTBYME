@@ -51,5 +51,7 @@ const sessionSchema = new mongoose.Schema({
 // Index for faster lookups
 sessionSchema.index({ class: 1, isActive: 1 });
 sessionSchema.index({ qrToken: 1 });
+sessionSchema.index({ class: 1, startTime: 1 });    // date-sorted session queries in analytics
 
 module.exports = mongoose.model('Session', sessionSchema);
+

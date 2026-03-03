@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, NavLink } from 'react-router-dom';
 import {
     ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend,
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -20,6 +20,49 @@ const StatCard = ({ label, value, color, icon }) => (
     </div>
 );
 
+// ── ReportSidebar defined OUTSIDE AttendanceReport so React never re-mounts it ──
+const ReportSidebar = ({ quickNav, classes, selectedId, setSelectedId }) => (
+    <aside className="glass-card-solid p-5 h-fit lg:sticky lg:top-24">
+        <div className="flex items-center gap-3 mb-6">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-lg shadow-lg shadow-purple-500/30">📚</div>
+            <div>
+                <p className="text-xs uppercase tracking-[0.25em] text-purple-200/80">Student Hub</p>
+                <h2 className="text-lg font-bold text-white">My Dashboard</h2>
+            </div>
+        </div>
+
+        <div className="space-y-3 mb-6">
+            {quickNav.map(item => (
+                <NavLink key={item.path} to={item.path}
+                    className={({ isActive }) => `w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border text-slate-200 transition-all duration-300 ${isActive
+                            ? 'border-purple-300/70 bg-purple-500/10 text-white'
+                            : 'border-slate-700/50 bg-slate-900/60 hover:border-purple-300/60 hover:text-white'}`}>
+                    <span className="flex items-center gap-2 text-sm font-medium">
+                        <span className="text-lg">{item.icon}</span>{item.label}
+                    </span>
+                    <span className="text-xs text-slate-400">→</span>
+                </NavLink>
+            ))}
+        </div>
+
+        <h3 className="text-sm font-semibold text-slate-200 mb-3">My Subjects</h3>
+        <div className="space-y-2">
+            {classes.map(cls => (
+                <button key={cls.classId} type="button" onClick={() => setSelectedId(cls.classId)}
+                    className={`w-full text-left rounded-xl border px-3 py-2.5 transition-all duration-300 ${selectedId === cls.classId
+                        ? 'border-purple-300/70 bg-purple-500/10 text-white'
+                        : 'border-slate-700/60 bg-slate-900/60 text-slate-200 hover:border-purple-300/60'}`}>
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold">{cls.subject}</p>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-200 border border-slate-700/60">{cls.classId}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">{cls.teacher}</p>
+                </button>
+            ))}
+        </div>
+    </aside>
+);
+
 const AttendanceReport = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -31,7 +74,7 @@ const AttendanceReport = () => {
     const [groupDaily, setGroupDaily] = useState([]);
     const [loading, setLoading] = useState(true);
     const [reportLoading, setReportLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState('personal'); // 'personal' | 'group'
+    const [activeTab, setActiveTab] = useState('personal');
 
     const quickNav = [
         { label: 'Dashboard', path: '/student/dashboard', icon: '📊' },
@@ -129,52 +172,15 @@ const AttendanceReport = () => {
         </div>
     );
 
-    const Sidebar = () => (
-        <aside className="glass-card-solid p-5 h-fit lg:sticky lg:top-24">
-            <div className="flex items-center gap-3 mb-6">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-lg shadow-lg shadow-purple-500/30">📚</div>
-                <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-purple-200/80">Student Hub</p>
-                    <h2 className="text-lg font-bold text-white">My Dashboard</h2>
-                </div>
-            </div>
-
-            <div className="space-y-3 mb-6">
-                {quickNav.map(item => (
-                    <button key={item.path} type="button" onClick={() => navigate(item.path)}
-                        className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border text-slate-200 transition-all duration-300 ${location.pathname === item.path
-                            ? 'border-purple-300/70 bg-purple-500/10 text-white'
-                            : 'border-slate-700/50 bg-slate-900/60 hover:border-purple-300/60 hover:text-white'}`}>
-                        <span className="flex items-center gap-2 text-sm font-medium">
-                            <span className="text-lg">{item.icon}</span>{item.label}
-                        </span>
-                        <span className="text-xs text-slate-400">→</span>
-                    </button>
-                ))}
-            </div>
-
-            <h3 className="text-sm font-semibold text-slate-200 mb-3">My Subjects</h3>
-            <div className="space-y-2">
-                {classes.map(cls => (
-                    <button key={cls.classId} type="button" onClick={() => setSelectedId(cls.classId)}
-                        className={`w-full text-left rounded-xl border px-3 py-2.5 transition-all duration-300 ${selectedId === cls.classId
-                            ? 'border-purple-300/70 bg-purple-500/10 text-white'
-                            : 'border-slate-700/60 bg-slate-900/60 text-slate-200 hover:border-purple-300/60'}`}>
-                        <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold">{cls.subject}</p>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-200 border border-slate-700/60">{cls.classId}</span>
-                        </div>
-                        <p className="text-xs text-slate-400 mt-1">{cls.teacher}</p>
-                    </button>
-                ))}
-            </div>
-        </aside>
-    );
-
     return (
         <div className="page-container">
             <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-                <Sidebar />
+                <ReportSidebar
+                    quickNav={quickNav}
+                    classes={classes}
+                    selectedId={selectedId}
+                    setSelectedId={setSelectedId}
+                />
 
                 <div>
                     {/* ── Header ────────────────────────────────────────────── */}

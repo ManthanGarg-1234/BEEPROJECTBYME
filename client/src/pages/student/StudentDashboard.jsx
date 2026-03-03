@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
@@ -63,18 +63,20 @@ const StudentDashboard = () => {
 
                         <div className="space-y-3 mb-6">
                             {quickNav.map((item) => (
-                                <button
+                                <NavLink
                                     key={item.path}
-                                    type="button"
-                                    onClick={() => navigate(item.path)}
-                                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white transition-all duration-300"
+                                    to={item.path}
+                                    className={({ isActive }) => `w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all duration-300 ${isActive
+                                            ? 'border-cyan-300/70 bg-cyan-500/10 text-white'
+                                            : 'bg-slate-900/60 border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white'
+                                        }`}
                                 >
                                     <span className="flex items-center gap-2 text-sm font-medium">
                                         <span className="text-lg">{item.icon}</span>
                                         {item.label}
                                     </span>
                                     <span className="text-xs text-slate-400">→</span>
-                                </button>
+                                </NavLink>
                             ))}
                         </div>
 
@@ -153,18 +155,20 @@ const StudentDashboard = () => {
 
                     <div className="space-y-3 mb-6">
                         {quickNav.map((item) => (
-                            <button
+                            <NavLink
                                 key={item.path}
-                                type="button"
-                                onClick={() => navigate(item.path)}
-                                className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white transition-all duration-300"
+                                to={item.path}
+                                className={({ isActive }) => `w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all duration-300 ${isActive
+                                        ? 'border-cyan-300/70 bg-cyan-500/10 text-white'
+                                        : 'bg-slate-900/60 border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white'
+                                    }`}
                             >
                                 <span className="flex items-center gap-2 text-sm font-medium">
                                     <span className="text-lg">{item.icon}</span>
                                     {item.label}
                                 </span>
                                 <span className="text-xs text-slate-400">→</span>
-                            </button>
+                            </NavLink>
                         ))}
                     </div>
 
@@ -203,7 +207,7 @@ const StudentDashboard = () => {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => window.location.assign('/student/scan')}
+                                onClick={() => navigate('/student/scan')}
                                 className="w-full btn-primary py-2.5"
                             >
                                 Mark Attendance

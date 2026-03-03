@@ -5,11 +5,11 @@ const User = require('../models/User');
 const { sendWarningEmail } = require('./emailService');
 
 /**
- * Calculate attendance percentage for a student in a class
- * Late does NOT count as present
+ * Calculate attendance percentage for a single student in a class
+ * (Used for individual lookups only — bulk evaluation uses evaluateClassAttendance which aggregates)
  */
 const calculateAttendancePercentage = async (studentId, classId) => {
-    const sessions = await Session.find({ class: classId }).select('_id');
+    const sessions = await Session.find({ class: classId }).select('_id').lean();
     const totalSessions = sessions.length;
 
     if (totalSessions === 0) return { percentage: 100, totalSessions: 0, presentCount: 0 };
@@ -49,9 +49,10 @@ const isEmailCooldownPassed = (lastWarningSentAt) => {
 
 /**
  * Evaluate attendance for all students in a class
+ * Uses a single aggregation instead of N sequential queries — O(1) DB calls
  */
 const evaluateClassAttendance = async (classId) => {
-    const classDoc = await Class.findById(classId).populate('students');
+    const classDoc = await Class.findById(classId).populate('students', 'name email rollNumber lastWarningSentAt');
     if (!classDoc) return { error: 'Class not found' };
 
     // Check semester progress >= 40%
@@ -64,10 +65,44 @@ const evaluateClassAttendance = async (classId) => {
         };
     }
 
+    // 1 query: all sessions for this class
+    const sessions = await Session.find({ class: classId }).select('_id').lean();
+    const totalSessions = sessions.length;
+
+    if (totalSessions === 0) {
+        return {
+            classId: classDoc.classId,
+            subject: classDoc.subject,
+            semesterProgress,
+            totalStudents: classDoc.students.length,
+            results: classDoc.students.map(s => ({
+                studentId: s._id, name: s.name, email: s.email,
+                rollNumber: s.rollNumber, percentage: 100, totalSessions: 0,
+                presentCount: 0, warningLevel: null, emailSent: false
+            }))
+        };
+    }
+
+    const sessionIds = sessions.map(s => s._id);
+
+    // 1 aggregation: count Present per student across all sessions
+    const attAgg = await Attendance.aggregate([
+        { $match: { session: { $in: sessionIds }, class: classDoc._id, status: 'Present' } },
+        { $group: { _id: '$student', presentCount: { $sum: 1 } } }
+    ]);
+
+    // Build map: studentId -> presentCount
+    const presentMap = {};
+    for (const { _id, presentCount } of attAgg) {
+        presentMap[_id.toString()] = presentCount;
+    }
+
     const results = [];
+    const emailPromises = [];
 
     for (const student of classDoc.students) {
-        const { percentage, totalSessions, presentCount } = await calculateAttendancePercentage(student._id, classId);
+        const presentCount = presentMap[student._id.toString()] || 0;
+        const percentage = Math.round((presentCount / totalSessions) * 10000) / 100;
         const warningLevel = getWarningLevel(percentage);
 
         const result = {
@@ -83,20 +118,26 @@ const evaluateClassAttendance = async (classId) => {
         };
 
         if (warningLevel && isEmailCooldownPassed(student.lastWarningSentAt)) {
-            const emailSent = await sendWarningEmail(student.email, student.name, {
-                subject: classDoc.subject,
-                percentage,
-                warningLevel
-            });
-
-            if (emailSent) {
-                await User.findByIdAndUpdate(student._id, { lastWarningSentAt: new Date() });
-                result.emailSent = true;
-            }
+            // Fire-and-forget email sending (non-blocking)
+            emailPromises.push(
+                sendWarningEmail(student.email, student.name, {
+                    subject: classDoc.subject,
+                    percentage,
+                    warningLevel
+                }).then(sent => {
+                    if (sent) {
+                        result.emailSent = true;
+                        return User.findByIdAndUpdate(student._id, { lastWarningSentAt: new Date() });
+                    }
+                }).catch(err => console.error(`Warning email failed for ${student.email}:`, err.message))
+            );
         }
 
         results.push(result);
     }
+
+    // Wait for all emails to finish
+    await Promise.all(emailPromises);
 
     return {
         classId: classDoc.classId,
@@ -113,3 +154,4 @@ module.exports = {
     isEmailCooldownPassed,
     evaluateClassAttendance
 };
+

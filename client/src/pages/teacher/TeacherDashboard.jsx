@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import api from '../../api';
 
@@ -100,18 +100,20 @@ const TeacherDashboard = () => {
 
                         <div className="space-y-3 mb-6">
                             {quickNav.map((item) => (
-                                <button
+                                <NavLink
                                     key={item.path}
-                                    type="button"
-                                    onClick={() => navigate(item.path)}
-                                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white transition-all duration-300"
+                                    to={item.path}
+                                    className={({ isActive }) => `w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all duration-300 ${isActive
+                                            ? 'border-cyan-300/70 bg-cyan-500/10 text-white'
+                                            : 'bg-slate-900/60 border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white'
+                                        }`}
                                 >
                                     <span className="flex items-center gap-2 text-sm font-medium">
                                         <span className="text-lg">{item.icon}</span>
                                         {item.label}
                                     </span>
                                     <span className="text-xs text-slate-400">→</span>
-                                </button>
+                                </NavLink>
                             ))}
                         </div>
 
@@ -220,18 +222,20 @@ const TeacherDashboard = () => {
 
                     <div className="space-y-3 mb-6">
                         {quickNav.map((item) => (
-                            <button
+                            <NavLink
                                 key={item.path}
-                                type="button"
-                                onClick={() => navigate(item.path)}
-                                className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-900/60 border border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white transition-all duration-300"
+                                to={item.path}
+                                className={({ isActive }) => `w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all duration-300 ${isActive
+                                        ? 'border-cyan-300/70 bg-cyan-500/10 text-white'
+                                        : 'bg-slate-900/60 border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white'
+                                    }`}
                             >
                                 <span className="flex items-center gap-2 text-sm font-medium">
                                     <span className="text-lg">{item.icon}</span>
                                     {item.label}
                                 </span>
                                 <span className="text-xs text-slate-400">→</span>
-                            </button>
+                            </NavLink>
                         ))}
                     </div>
 
@@ -249,11 +253,10 @@ const TeacherDashboard = () => {
                                                 key={cid}
                                                 type="button"
                                                 onClick={() => setSelectedClass(cid)}
-                                                className={`text-[10px] px-2 py-0.5 rounded-full border font-mono transition-all ${
-                                                    selectedClass === cid
+                                                className={`text-[10px] px-2 py-0.5 rounded-full border font-mono transition-all ${selectedClass === cid
                                                         ? 'bg-cyan-500/20 text-cyan-200 border-cyan-400/50'
                                                         : 'bg-slate-800 text-slate-300 border-slate-700/60 hover:border-cyan-400/40'
-                                                }`}>
+                                                    }`}>
                                                 {cid}
                                             </button>
                                         ))}
@@ -273,11 +276,10 @@ const TeacherDashboard = () => {
                                     key={item.classId}
                                     type="button"
                                     onClick={() => setSelectedClass(item.classId)}
-                                    className={`w-full flex items-center justify-between rounded-xl border px-3 py-2 transition-all duration-300 ${
-                                        selectedClass === item.classId
+                                    className={`w-full flex items-center justify-between rounded-xl border px-3 py-2 transition-all duration-300 ${selectedClass === item.classId
                                             ? 'border-cyan-300/70 bg-cyan-500/10 text-white'
                                             : 'border-slate-700/60 bg-slate-900/60 text-slate-200 hover:border-cyan-300/60'
-                                    }`}>
+                                        }`}>
                                     <div>
                                         <p className="text-sm font-semibold font-mono text-left">{item.classId}</p>
                                         <p className="text-xs text-slate-400 text-left">{item.studentCount} students</p>
@@ -325,193 +327,193 @@ const TeacherDashboard = () => {
                     </div>
 
                     {stats && (
-                <>
-                    {/* Selected class indicator */}
-                    <div className="flex items-center gap-2 mb-4 flex-wrap">
-                        <span className="text-xs text-slate-400">Showing data for:</span>
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono font-semibold">
-                            🆔 {selectedClass}
-                        </span>
-                    </div>
-                    {/* Vibrant Gradient Stat Cards */}
-                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-8 stagger-children">
-                        {statCards.map((card, i) => (
-                            <div key={i} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-[1px] group ${card.shadowColor} shadow-lg`}>
-                                <div className={`bg-white dark:bg-dark-800 rounded-[15px] p-5 h-full relative overflow-hidden`}>
-                                    {/* Colored accent corner */}
-                                    <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${card.gradient} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
-                                    <div className="flex items-center justify-between relative">
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{card.label}</p>
-                                                <span className="relative group">
-                                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-gray-200/70 dark:border-dark-600 text-[10px] text-gray-400 dark:text-gray-300">i</span>
-                                                    <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-44 rounded-lg bg-gray-900 text-white text-[11px] px-2 py-1.5 shadow-lg opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 pointer-events-none">
-                                                        {card.helper}
-                                                    </span>
-                                                </span>
+                        <>
+                            {/* Selected class indicator */}
+                            <div className="flex items-center gap-2 mb-4 flex-wrap">
+                                <span className="text-xs text-slate-400">Showing data for:</span>
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono font-semibold">
+                                    🆔 {selectedClass}
+                                </span>
+                            </div>
+                            {/* Vibrant Gradient Stat Cards */}
+                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-8 stagger-children">
+                                {statCards.map((card, i) => (
+                                    <div key={i} className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${card.gradient} p-[1px] group ${card.shadowColor} shadow-lg`}>
+                                        <div className={`bg-white dark:bg-dark-800 rounded-[15px] p-5 h-full relative overflow-hidden`}>
+                                            {/* Colored accent corner */}
+                                            <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${card.gradient} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
+                                            <div className="flex items-center justify-between relative">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{card.label}</p>
+                                                        <span className="relative group">
+                                                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-gray-200/70 dark:border-dark-600 text-[10px] text-gray-400 dark:text-gray-300">i</span>
+                                                            <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-44 rounded-lg bg-gray-900 text-white text-[11px] px-2 py-1.5 shadow-lg opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 pointer-events-none">
+                                                                {card.helper}
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                    <p className={`text-3xl font-extrabold mt-1.5 bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
+                                                        {card.value}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{card.helper}</p>
+                                                </div>
+                                                <div className={`w-14 h-14 rounded-2xl ${card.iconBg} flex items-center justify-center`}>
+                                                    <span className="text-2xl">{card.icon}</span>
+                                                </div>
                                             </div>
-                                            <p className={`text-3xl font-extrabold mt-1.5 bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
-                                                {card.value}
-                                            </p>
-                                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{card.helper}</p>
                                         </div>
-                                        <div className={`w-14 h-14 rounded-2xl ${card.iconBg} flex items-center justify-center`}>
-                                            <span className="text-2xl">{card.icon}</span>
-                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mb-6">
+                                Metrics reflect the selected class only. Attendance % is calculated from present records vs total sessions.
+                            </div>
+
+                            {/* Semester Progress - Colorful */}
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] mb-8">
+                                <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
+                                    <div className="flex justify-between items-center mb-3 relative">
+                                        <h3 className="font-bold dark:text-white flex items-center gap-2">
+                                            <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm">📈</span>
+                                            Semester Progress
+                                        </h3>
+                                        <span className="text-sm font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{stats.semesterProgress}%</span>
+                                    </div>
+                                    <div className="relative h-4 bg-gray-100 dark:bg-dark-600 rounded-full overflow-hidden">
+                                        <div
+                                            className="absolute h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full"
+                                            style={{ width: `${Math.min(stats.semesterProgress, 100)}%` }}
+                                        ></div>
                                     </div>
                                 </div>
                             </div>
-                        ))}
-                    </div>
 
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-6">
-                        Metrics reflect the selected class only. Attendance % is calculated from present records vs total sessions.
-                    </div>
-
-                    {/* Semester Progress - Colorful */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-[1px] mb-8">
-                        <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
-                            <div className="flex justify-between items-center mb-3 relative">
-                                <h3 className="font-bold dark:text-white flex items-center gap-2">
-                                    <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm">📈</span>
-                                    Semester Progress
-                                </h3>
-                                <span className="text-sm font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{stats.semesterProgress}%</span>
-                            </div>
-                            <div className="relative h-4 bg-gray-100 dark:bg-dark-600 rounded-full overflow-hidden">
-                                <div
-                                    className="absolute h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full"
-                                    style={{ width: `${Math.min(stats.semesterProgress, 100)}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Daily Chart - Colorful */}
-                    {chartData.length > 0 && (
-                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 p-[1px] mb-8">
-                            <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
-                                <div className="flex items-center justify-between mb-5">
-                                    <h3 className="font-bold dark:text-white flex items-center gap-2 relative">
-                                    <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white text-sm">📈</span>
-                                    Daily Attendance Trend
-                                    </h3>
-                                    {latestTrend && (
-                                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                                            Latest: {latestTrend.percentage}% on {latestTrend.date}
-                                        </span>
-                                    )}
+                            {/* Daily Chart - Colorful */}
+                            {chartData.length > 0 && (
+                                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 p-[1px] mb-8">
+                                    <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
+                                        <div className="flex items-center justify-between mb-5">
+                                            <h3 className="font-bold dark:text-white flex items-center gap-2 relative">
+                                                <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center text-white text-sm">📈</span>
+                                                Daily Attendance Trend
+                                            </h3>
+                                            {latestTrend && (
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                    Latest: {latestTrend.percentage}% on {latestTrend.date}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                Each point shows the class-wide attendance percentage for a session date.
+                                            </p>
+                                            <span className="relative group">
+                                                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-gray-200/70 dark:border-dark-600 text-[10px] text-gray-400 dark:text-gray-300">i</span>
+                                                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-52 rounded-lg bg-gray-900 text-white text-[11px] px-2 py-1.5 shadow-lg opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 pointer-events-none">
+                                                    Trend is computed from attendance records for the selected class only.
+                                                </span>
+                                            </span>
+                                        </div>
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <AreaChart data={chartData}>
+                                                <defs>
+                                                    <linearGradient id="colorPercent" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0.02} />
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
+                                                <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                                                <YAxis stroke="#9ca3af" fontSize={12} domain={[0, 100]} tickLine={false} axisLine={false} />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        backgroundColor: '#fff',
+                                                        border: '2px solid #6366f1',
+                                                        borderRadius: '12px',
+                                                        color: '#1f2937',
+                                                        boxShadow: '0 10px 30px rgba(99,102,241,0.15)'
+                                                    }}
+                                                />
+                                                <Area type="monotone" dataKey="percentage" stroke="#6366f1" strokeWidth={3} fill="url(#colorPercent)" name="Attendance %"
+                                                    dot={{ r: 4, fill: '#6366f1', strokeWidth: 3, stroke: '#fff' }}
+                                                    activeDot={{ r: 7, strokeWidth: 0, fill: '#6366f1' }} />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2 mb-4">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        Each point shows the class-wide attendance percentage for a session date.
-                                    </p>
-                                    <span className="relative group">
-                                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-gray-200/70 dark:border-dark-600 text-[10px] text-gray-400 dark:text-gray-300">i</span>
-                                        <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-52 rounded-lg bg-gray-900 text-white text-[11px] px-2 py-1.5 shadow-lg opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 pointer-events-none">
-                                            Trend is computed from attendance records for the selected class only.
-                                        </span>
-                                    </span>
+                            )}
+
+                            {/* Student Stats Table - Colorful */}
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 to-purple-400 p-[1px]">
+                                <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
+                                    <div className="flex justify-between items-center mb-5">
+                                        <h3 className="font-bold dark:text-white flex items-center gap-2">
+                                            <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-violet-500 to-purple-400 flex items-center justify-center text-white text-sm">👥</span>
+                                            Student-wise Summary
+                                        </h3>
+                                        <button
+                                            onClick={() => navigate('/teacher/reports')}
+                                            className="bg-gradient-to-r from-violet-500 to-purple-500 text-white text-sm px-5 py-2 rounded-xl font-semibold shadow-md shadow-purple-500/20 transition-shadow duration-200 flex items-center gap-1.5"
+                                        >
+                                            Full Report
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div className="overflow-x-auto rounded-xl">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20">
+                                                    <th className="text-left py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Roll No</th>
+                                                    <th className="text-left py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Name</th>
+                                                    <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Present</th>
+                                                    <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Total</th>
+                                                    <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">%</th>
+                                                    <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100 dark:divide-dark-700">
+                                                {stats.studentStats?.map((s, idx) => (
+                                                    <tr key={s._id} className="hover:bg-violet-50/50 dark:hover:bg-violet-900/10 transition-colors duration-200">
+                                                        <td className="py-3.5 px-4 font-mono text-xs text-gray-600 dark:text-gray-300">{s.rollNumber}</td>
+                                                        <td className="py-3.5 px-4 dark:text-white font-medium">{s.name}</td>
+                                                        <td className="py-3.5 px-4 text-center">
+                                                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                                                                {s.presentCount}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-3.5 px-4 text-center dark:text-gray-300">{s.totalSessions}</td>
+                                                        <td className="py-3.5 px-4 text-center">
+                                                            <span className={`font-extrabold ${s.percentage >= 75 ? 'text-emerald-500' : s.percentage >= 65 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                                                {s.percentage}%
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-3.5 px-4 text-center">
+                                                            {s.warningLevel ? (
+                                                                <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold ${s.warningLevel === 'Critical'
+                                                                    ? 'bg-gradient-to-r from-rose-100 to-red-100 dark:from-rose-900/30 dark:to-red-900/30 text-rose-600 dark:text-rose-400'
+                                                                    : 'bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-600 dark:text-amber-400'
+                                                                    }`}>
+                                                                    {s.warningLevel === 'Critical' ? '🔴' : '🟡'} {s.warningLevel}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-600 dark:text-emerald-400">
+                                                                    🟢 Good
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <AreaChart data={chartData}>
-                                        <defs>
-                                            <linearGradient id="colorPercent" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor="#6366f1" stopOpacity={0.02} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
-                                        <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="#9ca3af" fontSize={12} domain={[0, 100]} tickLine={false} axisLine={false} />
-                                        <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: '#fff',
-                                                border: '2px solid #6366f1',
-                                                borderRadius: '12px',
-                                                color: '#1f2937',
-                                                boxShadow: '0 10px 30px rgba(99,102,241,0.15)'
-                                            }}
-                                        />
-                                        <Area type="monotone" dataKey="percentage" stroke="#6366f1" strokeWidth={3} fill="url(#colorPercent)" name="Attendance %"
-                                            dot={{ r: 4, fill: '#6366f1', strokeWidth: 3, stroke: '#fff' }}
-                                            activeDot={{ r: 7, strokeWidth: 0, fill: '#6366f1' }} />
-                                    </AreaChart>
-                                </ResponsiveContainer>
                             </div>
-                        </div>
+                        </>
                     )}
-
-                    {/* Student Stats Table - Colorful */}
-                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 to-purple-400 p-[1px]">
-                        <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
-                            <div className="flex justify-between items-center mb-5">
-                                <h3 className="font-bold dark:text-white flex items-center gap-2">
-                                    <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-violet-500 to-purple-400 flex items-center justify-center text-white text-sm">👥</span>
-                                    Student-wise Summary
-                                </h3>
-                                <button
-                                    onClick={() => navigate('/teacher/reports')}
-                                    className="bg-gradient-to-r from-violet-500 to-purple-500 text-white text-sm px-5 py-2 rounded-xl font-semibold shadow-md shadow-purple-500/20 transition-shadow duration-200 flex items-center gap-1.5"
-                                >
-                                    Full Report
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div className="overflow-x-auto rounded-xl">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20">
-                                                            <th className="text-left py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Roll No</th>
-                                            <th className="text-left py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Name</th>
-                                            <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Present</th>
-                                            <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Total</th>
-                                            <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">%</th>
-                                            <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 dark:divide-dark-700">
-                                        {stats.studentStats?.map((s, idx) => (
-                                            <tr key={s._id} className="hover:bg-violet-50/50 dark:hover:bg-violet-900/10 transition-colors duration-200">
-                                                <td className="py-3.5 px-4 font-mono text-xs text-gray-600 dark:text-gray-300">{s.rollNumber}</td>
-                                                <td className="py-3.5 px-4 dark:text-white font-medium">{s.name}</td>
-                                                <td className="py-3.5 px-4 text-center">
-                                                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
-                                                        {s.presentCount}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3.5 px-4 text-center dark:text-gray-300">{s.totalSessions}</td>
-                                                <td className="py-3.5 px-4 text-center">
-                                                    <span className={`font-extrabold ${s.percentage >= 75 ? 'text-emerald-500' : s.percentage >= 65 ? 'text-amber-500' : 'text-rose-500'}`}>
-                                                        {s.percentage}%
-                                                    </span>
-                                                </td>
-                                                <td className="py-3.5 px-4 text-center">
-                                                    {s.warningLevel ? (
-                                                        <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold ${s.warningLevel === 'Critical'
-                                                            ? 'bg-gradient-to-r from-rose-100 to-red-100 dark:from-rose-900/30 dark:to-red-900/30 text-rose-600 dark:text-rose-400'
-                                                            : 'bg-gradient-to-r from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 text-amber-600 dark:text-amber-400'
-                                                            }`}>
-                                                            {s.warningLevel === 'Critical' ? '🔴' : '🟡'} {s.warningLevel}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-600 dark:text-emerald-400">
-                                                            🟢 Good
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
                 </div>
             </div>
         </div>

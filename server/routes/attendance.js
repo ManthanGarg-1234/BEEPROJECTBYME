@@ -23,8 +23,6 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
         const { qrToken, latitude, longitude, deviceId, accuracy } = req.body;
         const studentId = req.user._id;
 
-        console.log(`[ATTENDANCE DEBUG] Student: ${req.user.name} (${studentId}), Device: ${deviceId}, Location: ${latitude}, ${longitude}`);
-
         // 1. Find active session by QR token
         const session = await Session.findOne({ qrToken, isActive: true });
 
@@ -32,26 +30,21 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             // Check if token exists but is expired
             const expiredSession = await Session.findOne({ qrToken });
             if (expiredSession) {
-                console.log(`[ATTENDANCE DEBUG] REJECTED: Expired QR for ${req.user.name}`);
                 await logSuspicious(studentId, expiredSession._id, 'EXPIRED_QR', deviceId, { latitude, longitude });
                 return res.status(400).json({ message: 'QR code has expired. Wait for refresh.' });
             }
-
-            console.log(`[ATTENDANCE DEBUG] REJECTED: Invalid QR for ${req.user.name}`);
             await logSuspicious(studentId, null, 'INVALID_QR', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'Invalid QR code' });
         }
 
         // 2. Check QR expiry
         if (new Date() > new Date(session.qrExpiresAt)) {
-            console.log(`[ATTENDANCE DEBUG] REJECTED: QR expired (time) for ${req.user.name}`);
             await logSuspicious(studentId, session._id, 'EXPIRED_QR', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'QR code has expired. Wait for refresh.' });
         }
 
         // 3. Check if attendance window has closed
         if (new Date() > new Date(session.attendanceWindowEnd)) {
-            console.log(`[ATTENDANCE DEBUG] REJECTED: Window closed for ${req.user.name}`);
             await logSuspicious(studentId, session._id, 'WINDOW_CLOSED', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'Attendance window has closed' });
         }
@@ -62,7 +55,6 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             student: studentId
         });
         if (existingAttendance) {
-            console.log(`[ATTENDANCE DEBUG] REJECTED: Duplicate attendance for ${req.user.name}`);
             await logSuspicious(studentId, session._id, 'DUPLICATE_ATTENDANCE', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'Attendance already marked for this session' });
         }
@@ -73,14 +65,12 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             deviceId
         });
         if (deviceUsed) {
-            console.log(`[ATTENDANCE DEBUG] REJECTED: Duplicate device for ${req.user.name}, device: ${deviceId}`);
             await logSuspicious(studentId, session._id, 'DUPLICATE_DEVICE', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'This device has already been used to mark attendance in this session' });
         }
 
         // 6. GPS validation (optional)
         let gpsResult = { isValid: true, distance: 0 };
-        // Default to false to prevent errors with seeded data (fixed location) vs real user location
         const enforceGps = String(process.env.GPS_ENFORCE || 'false').toLowerCase() === 'true';
 
         if (enforceGps && session.location && session.location.latitude) {
@@ -96,9 +86,6 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
                 effectiveRadius
             );
 
-            console.log(`[ATTENDANCE DEBUG] GPS check for ${req.user.name}: distance=${gpsResult.distance}m, limit=${effectiveRadius}m (base ${radiusMeters}m, student acc ${accuracyMeters}m, teacher acc ${teacherAccuracy}m), valid=${gpsResult.isValid}`);
-            console.log(`[ATTENDANCE DEBUG] Session location: ${session.location.latitude}, ${session.location.longitude} | Student location: ${latitude}, ${longitude}`);
-
             if (!gpsResult.isValid) {
                 await logSuspicious(studentId, session._id, 'GPS_OUT_OF_RANGE', deviceId, { latitude, longitude },
                     `Distance: ${gpsResult.distance}m, Limit: ${radiusMeters}m`);
@@ -106,8 +93,6 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
                     message: `GPS Check Failed: You are ${Math.round(gpsResult.distance)}m away (Allowed: ${Math.round(effectiveRadius)}m).`
                 });
             }
-        } else {
-            console.log(`[ATTENDANCE DEBUG] GPS check skipped for ${req.user.name} (GPS_ENFORCE=false)`);
         }
 
         // 7. Determine status based on time
@@ -120,7 +105,6 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
         } else if (minutesSinceStart <= 15) {
             status = 'Late';
         } else {
-            // Beyond 15 minutes - reject
             await logSuspicious(studentId, session._id, 'LATE_REJECTED', deviceId, { latitude, longitude },
                 `${Math.round(minutesSinceStart)} minutes late`);
             return res.status(400).json({
@@ -181,6 +165,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
     }
 });
 
+
 // @route   GET /api/attendance/session/:sessionId
 // @desc    Get attendance for a session
 // @access  Teacher
@@ -211,8 +196,18 @@ router.get('/session/:sessionId', auth, authorize('teacher'), async (req, res) =
 // @access  Student
 router.get('/student/:classId', auth, authorize('student'), async (req, res) => {
     try {
+        const Class = require('../models/Class');
+        // classId param is a string like 'CN-G18', not a MongoDB _id
+        // We must look up the Class document first, then query by its ObjectId
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() }).select('_id students').lean();
+        if (!classDoc) return res.status(404).json({ message: 'Class not found' });
+
+        // Verify student is enrolled
+        const isEnrolled = classDoc.students.some(s => s.toString() === req.user._id.toString());
+        if (!isEnrolled) return res.status(403).json({ message: 'Not enrolled in this class' });
+
         const attendance = await Attendance.find({
-            class: req.params.classId,
+            class: classDoc._id,
             student: req.user._id
         })
             .populate('session', 'startTime endTime')
@@ -223,6 +218,7 @@ router.get('/student/:classId', auth, authorize('student'), async (req, res) => 
         res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 // @route   GET /api/attendance/suspicious/:sessionId
 // @desc    Get suspicious logs for a session
