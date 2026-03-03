@@ -1,5 +1,8 @@
 const nodemailer = require('nodemailer');
 
+// Email is disabled when SMTP credentials are not configured
+const EMAIL_ENABLED = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+
 let transporter = null;
 
 const getTransporter = () => {
@@ -62,6 +65,8 @@ const sendWarningEmail = async (studentEmail, studentName, data) => {
     </div>
   `;
 
+    if (!EMAIL_ENABLED) return false;
+
     try {
         const transport = getTransporter();
         await transport.sendMail({
@@ -98,6 +103,8 @@ const sendWelcomeEmail = async (email, name, tempPassword) => {
       </div>
     </div>
   `;
+
+    if (!EMAIL_ENABLED) return false;
 
     try {
         const transport = getTransporter();
