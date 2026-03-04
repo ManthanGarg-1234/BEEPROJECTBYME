@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
+const compression = require('compression');
 const { Server } = require('socket.io');
 const path = require('path');
 const connectDB = require('./config/db');
@@ -56,6 +57,7 @@ app.set('io', io);
 initSocketHandler(io);
 
 // Middleware
+app.use(compression()); // gzip — reduces response size by ~60-80%
 app.use(cors({
     origin: (origin, callback) => {
         if (isOriginAllowed(origin)) {

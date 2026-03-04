@@ -1,24 +1,27 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Suspense, lazy } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ChangePassword from './pages/ChangePassword';
-import TeacherDashboard from './pages/teacher/TeacherDashboard';
-import ClassManagement from './pages/teacher/ClassManagement';
-import BulkEnroll from './pages/teacher/BulkEnroll';
-import SessionManager from './pages/teacher/SessionManager';
-import LiveAttendance from './pages/teacher/LiveAttendance';
-import AttendanceReport from './pages/teacher/AttendanceReport';
-import EvaluationPanel from './pages/teacher/EvaluationPanel';
-import ManualAttendance from './pages/teacher/ManualAttendance';
-import StudentDashboard from './pages/student/StudentDashboard';
-import StudentAttendanceReport from './pages/student/AttendanceReport';
-import Subjects from './pages/student/Subjects';
-import ScanQR from './pages/student/ScanQR';
+
+// Lazy-loaded pages — Vite will split these into separate chunks
+// so first-visit only downloads the code for the current page
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ChangePassword = lazy(() => import('./pages/ChangePassword'));
+const TeacherDashboard = lazy(() => import('./pages/teacher/TeacherDashboard'));
+const ClassManagement = lazy(() => import('./pages/teacher/ClassManagement'));
+const BulkEnroll = lazy(() => import('./pages/teacher/BulkEnroll'));
+const SessionManager = lazy(() => import('./pages/teacher/SessionManager'));
+const LiveAttendance = lazy(() => import('./pages/teacher/LiveAttendance'));
+const AttendanceReport = lazy(() => import('./pages/teacher/AttendanceReport'));
+const EvaluationPanel = lazy(() => import('./pages/teacher/EvaluationPanel'));
+const ManualAttendance = lazy(() => import('./pages/teacher/ManualAttendance'));
+const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
+const StudentAttendanceReport = lazy(() => import('./pages/student/AttendanceReport'));
+const Subjects = lazy(() => import('./pages/student/Subjects'));
+const ScanQR = lazy(() => import('./pages/student/ScanQR'));
 
 function App() {
     const { loading, isAuthenticated, user } = useAuth();
@@ -62,75 +65,77 @@ function App() {
             </div>
             <div className="app-content">
                 {isAuthenticated && <Navbar />}
-                <Routes>
-                    {/* Public Routes */}
-                    <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to={getDefaultRedirect()} />} />
-                    <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to={getDefaultRedirect()} />} />
+                <Suspense fallback={<LoadingSpinner />}>
+                    <Routes>
+                        {/* Public Routes */}
+                        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to={getDefaultRedirect()} />} />
+                        <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to={getDefaultRedirect()} />} />
 
-                    {/* Change Password (first login) */}
-                    <Route path="/change-password" element={
-                        <ProtectedRoute><ChangePassword /></ProtectedRoute>
-                    } />
+                        {/* Change Password (first login) */}
+                        <Route path="/change-password" element={
+                            <ProtectedRoute><ChangePassword /></ProtectedRoute>
+                        } />
 
-                    {/* Teacher Routes */}
-                    <Route path="/teacher/dashboard" element={
-                        <ProtectedRoute role="teacher"><TeacherDashboard /></ProtectedRoute>
-                    } />
-                    <Route path="/teacher/classes" element={
-                        <ProtectedRoute role="teacher"><ClassManagement /></ProtectedRoute>
-                    } />
-                    <Route path="/teacher/classes/:classId/enroll" element={
-                        <ProtectedRoute role="teacher"><BulkEnroll /></ProtectedRoute>
-                    } />
-                    <Route path="/teacher/session" element={
-                        <ProtectedRoute role="teacher"><SessionManager /></ProtectedRoute>
-                    } />
-                    <Route path="/teacher/session/:sessionId/live" element={
-                        <ProtectedRoute role="teacher"><LiveAttendance /></ProtectedRoute>
-                    } />
-                    <Route path="/teacher/reports" element={
-                        <ProtectedRoute role="teacher"><AttendanceReport /></ProtectedRoute>
-                    } />
-                    <Route path="/teacher/evaluation" element={
-                        <ProtectedRoute role="teacher"><EvaluationPanel /></ProtectedRoute>
-                    } />
-                    <Route path="/teacher/manual-attendance" element={
-                        <ProtectedRoute role="teacher"><ManualAttendance /></ProtectedRoute>
-                    } />
+                        {/* Teacher Routes */}
+                        <Route path="/teacher/dashboard" element={
+                            <ProtectedRoute role="teacher"><TeacherDashboard /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/classes" element={
+                            <ProtectedRoute role="teacher"><ClassManagement /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/classes/:classId/enroll" element={
+                            <ProtectedRoute role="teacher"><BulkEnroll /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/session" element={
+                            <ProtectedRoute role="teacher"><SessionManager /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/session/:sessionId/live" element={
+                            <ProtectedRoute role="teacher"><LiveAttendance /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/reports" element={
+                            <ProtectedRoute role="teacher"><AttendanceReport /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/evaluation" element={
+                            <ProtectedRoute role="teacher"><EvaluationPanel /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/manual-attendance" element={
+                            <ProtectedRoute role="teacher"><ManualAttendance /></ProtectedRoute>
+                        } />
 
-                    {/* Student Routes */}
-                    <Route path="/student/dashboard" element={
-                        <ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>
-                    } />
-                    <Route path="/student/subjects" element={
-                        <ProtectedRoute role="student"><Subjects /></ProtectedRoute>
-                    } />
-                    <Route path="/student/scan" element={
-                        <ProtectedRoute role="student"><ScanQR /></ProtectedRoute>
-                    } />
-                    <Route path="/student/reports" element={
-                        <ProtectedRoute role="student"><StudentAttendanceReport /></ProtectedRoute>
-                    } />
+                        {/* Student Routes */}
+                        <Route path="/student/dashboard" element={
+                            <ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>
+                        } />
+                        <Route path="/student/subjects" element={
+                            <ProtectedRoute role="student"><Subjects /></ProtectedRoute>
+                        } />
+                        <Route path="/student/scan" element={
+                            <ProtectedRoute role="student"><ScanQR /></ProtectedRoute>
+                        } />
+                        <Route path="/student/reports" element={
+                            <ProtectedRoute role="student"><StudentAttendanceReport /></ProtectedRoute>
+                        } />
 
-                    {/* Teacher URL aliases — short/alternate paths redirect to canonical routes */}
-                    <Route path="/teacher/home" element={<Navigate to="/teacher/dashboard" replace />} />
-                    <Route path="/teacher/manual" element={<Navigate to="/teacher/manual-attendance" replace />} />
-                    <Route path="/teacher/manual-attendence" element={<Navigate to="/teacher/manual-attendance" replace />} />
-                    <Route path="/teacher/class" element={<Navigate to="/teacher/classes" replace />} />
-                    <Route path="/teacher/sessions" element={<Navigate to="/teacher/session" replace />} />
-                    <Route path="/teacher/report" element={<Navigate to="/teacher/reports" replace />} />
-                    <Route path="/teacher/live" element={<Navigate to="/teacher/session" replace />} />
+                        {/* Teacher URL aliases — short/alternate paths redirect to canonical routes */}
+                        <Route path="/teacher/home" element={<Navigate to="/teacher/dashboard" replace />} />
+                        <Route path="/teacher/manual" element={<Navigate to="/teacher/manual-attendance" replace />} />
+                        <Route path="/teacher/manual-attendence" element={<Navigate to="/teacher/manual-attendance" replace />} />
+                        <Route path="/teacher/class" element={<Navigate to="/teacher/classes" replace />} />
+                        <Route path="/teacher/sessions" element={<Navigate to="/teacher/session" replace />} />
+                        <Route path="/teacher/report" element={<Navigate to="/teacher/reports" replace />} />
+                        <Route path="/teacher/live" element={<Navigate to="/teacher/session" replace />} />
 
-                    {/* Student URL aliases — short/alternate paths redirect to canonical routes */}
-                    <Route path="/student/home" element={<Navigate to="/student/dashboard" replace />} />
-                    <Route path="/student/report" element={<Navigate to="/student/reports" replace />} />
-                    <Route path="/student/scan-qr" element={<Navigate to="/student/scan" replace />} />
-                    <Route path="/student/mark" element={<Navigate to="/student/scan" replace />} />
-                    <Route path="/student/subject" element={<Navigate to="/student/subjects" replace />} />
+                        {/* Student URL aliases — short/alternate paths redirect to canonical routes */}
+                        <Route path="/student/home" element={<Navigate to="/student/dashboard" replace />} />
+                        <Route path="/student/report" element={<Navigate to="/student/reports" replace />} />
+                        <Route path="/student/scan-qr" element={<Navigate to="/student/scan" replace />} />
+                        <Route path="/student/mark" element={<Navigate to="/student/scan" replace />} />
+                        <Route path="/student/subject" element={<Navigate to="/student/subjects" replace />} />
 
-                    {/* Default redirect */}
-                    <Route path="*" element={<Navigate to={getDefaultRedirect()} />} />
-                </Routes>
+                        {/* Default redirect */}
+                        <Route path="*" element={<Navigate to={getDefaultRedirect()} />} />
+                    </Routes>
+                </Suspense>
             </div>
         </div>
     );

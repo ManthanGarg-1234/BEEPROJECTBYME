@@ -165,7 +165,7 @@ router.post('/:id/end', auth, authorize('teacher'), async (req, res) => {
 // @access  Private
 router.get('/active/:classId', auth, async (req, res) => {
     try {
-        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() });
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() }).select('_id').lean();
         if (!classDoc) {
             return res.status(404).json({ message: 'Class not found' });
         }
@@ -199,7 +199,8 @@ router.get('/history/:classId', auth, authorize('teacher'), async (req, res) => 
 
         const sessions = await Session.find({ class: classDoc._id })
             .sort({ startTime: -1 })
-            .limit(50);
+            .limit(50)
+            .lean();
 
         res.json(sessions);
     } catch (error) {

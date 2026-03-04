@@ -48,17 +48,24 @@ const SessionManager = () => {
             const res = await api.get('/classes');
             setClasses(res.data);
             if (res.data.length > 0) setSelectedClass(res.data[0].classId);
-            for (const cls of res.data) {
-                try {
-                    const sessionRes = await api.get(`/sessions/active/${cls.classId}`);
-                    if (sessionRes.data && sessionRes.data.isActive) {
-                        const s = sessionRes.data;
-                        setActiveSession({ _id: s._id, classId: cls.classId, subject: cls.subject, qrToken: s.qrToken, attendanceWindowEnd: s.attendanceWindowEnd, startTime: s.startTime, isActive: true });
-                        setQrData(s.qrToken);
-                        if (new Date() >= new Date(s.attendanceWindowEnd)) { setWindowClosed(true); setWindowTimer('Window Closed'); }
-                        break;
-                    }
-                } catch (e) { }
+
+            // Parallel fetch — check all classes for active sessions simultaneously
+            const sessionChecks = await Promise.all(
+                res.data.map(cls =>
+                    api.get(`/sessions/active/${cls.classId}`)
+                        .then(r => ({ cls, session: r.data }))
+                        .catch(() => null) // class has no active session
+                )
+            );
+
+            for (const hit of sessionChecks) {
+                if (hit?.session?.isActive) {
+                    const { cls, session: s } = hit;
+                    setActiveSession({ _id: s._id, classId: cls.classId, subject: cls.subject, qrToken: s.qrToken, attendanceWindowEnd: s.attendanceWindowEnd, startTime: s.startTime, isActive: true });
+                    setQrData(s.qrToken);
+                    if (new Date() >= new Date(s.attendanceWindowEnd)) { setWindowClosed(true); setWindowTimer('Window Closed'); }
+                    break;
+                }
             }
         } catch (err) { console.error(err); }
     };

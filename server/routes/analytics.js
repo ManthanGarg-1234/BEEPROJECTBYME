@@ -148,30 +148,30 @@ router.get('/heatmap/:classId', auth, authorize('teacher'), async (req, res) => 
             return res.status(404).json({ message: 'Class not found or you do not have access' });
         }
 
-        const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 });
-        const heatmapData = [];
+        const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 }).lean();
+        const sessionIds = sessions.map(s => s._id);
 
-        for (const student of classDoc.students) {
-            const row = {
-                name: student.name,
-                rollNumber: student.rollNumber,
-                sessions: []
-            };
+        // Single aggregation: replaces O(students × sessions) individual DB finds
+        const attAgg = await Attendance.aggregate([
+            { $match: { session: { $in: sessionIds }, class: classDoc._id } },
+            { $group: { _id: { session: '$session', student: '$student', status: '$status' }, count: { $sum: 1 } } }
+        ]);
 
-            for (const session of sessions) {
-                const att = await Attendance.findOne({
-                    session: session._id,
-                    student: student._id
-                });
-
-                row.sessions.push({
-                    date: session.startTime.toISOString().split('T')[0],
-                    status: att ? att.status : 'Absent'
-                });
-            }
-
-            heatmapData.push(row);
+        // Build map: studentId_sessionId → status
+        const attMap = {};
+        for (const { _id } of attAgg) {
+            const key = `${_id.student}_${_id.session}`;
+            attMap[key] = _id.status;
         }
+
+        const heatmapData = classDoc.students.map(student => ({
+            name: student.name,
+            rollNumber: student.rollNumber,
+            sessions: sessions.map(session => ({
+                date: session.startTime.toISOString().split('T')[0],
+                status: attMap[`${student._id}_${session._id}`] || 'Absent'
+            }))
+        }));
 
         res.json({
             dates: sessions.map(s => s.startTime.toISOString().split('T')[0]),
@@ -195,9 +195,22 @@ router.get('/csv/:classId', auth, authorize('teacher'), async (req, res) => {
             return res.status(404).json({ message: 'Class not found or you do not have access' });
         }
 
-        const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 });
-        const rows = [];
+        const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 }).lean();
+        const sessionIds = sessions.map(s => s._id);
 
+        // Single aggregation: replaces O(students × sessions) individual DB finds
+        const attAgg = await Attendance.aggregate([
+            { $match: { session: { $in: sessionIds }, class: classDoc._id } },
+            { $project: { session: 1, student: 1, status: 1 } }
+        ]);
+
+        // Build map: studentId_sessionId → status
+        const attMap = {};
+        for (const rec of attAgg) {
+            attMap[`${rec.student}_${rec.session}`] = rec.status;
+        }
+
+        const rows = [];
         for (const student of classDoc.students) {
             const row = {
                 'Roll Number': student.rollNumber,
@@ -207,14 +220,10 @@ router.get('/csv/:classId', auth, authorize('teacher'), async (req, res) => {
 
             let presentCount = 0;
             for (const session of sessions) {
-                const att = await Attendance.findOne({
-                    session: session._id,
-                    student: student._id
-                });
-
                 const dateKey = session.startTime.toISOString().split('T')[0];
-                row[dateKey] = att ? att.status : 'Absent';
-                if (att && att.status === 'Present') presentCount++;
+                const status = attMap[`${student._id}_${session._id}`] || 'Absent';
+                row[dateKey] = status;
+                if (status === 'Present') presentCount++;
             }
 
             row['Total Present'] = presentCount;
