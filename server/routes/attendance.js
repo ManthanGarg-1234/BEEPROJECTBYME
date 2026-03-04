@@ -37,19 +37,36 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             return res.status(400).json({ message: 'Invalid QR code' });
         }
 
-        // 2. Check QR expiry
+        // 2. Verify student is enrolled in the session's class (prevent cross-group marking)
+        const Class = require('../models/Class');
+        const sessionClass = await Class.findById(session.class).select('students classId').lean();
+        if (!sessionClass) {
+            return res.status(400).json({ message: 'Session class not found' });
+        }
+        const isEnrolled = sessionClass.students.some(
+            s => s.toString() === studentId.toString()
+        );
+        if (!isEnrolled) {
+            await logSuspicious(studentId, session._id, 'WRONG_GROUP', deviceId, { latitude, longitude },
+                `Student tried to mark attendance for class ${sessionClass.classId} but is not enrolled`);
+            return res.status(403).json({
+                message: `You are not enrolled in this class (${sessionClass.classId}). You cannot mark attendance for another group's session.`
+            });
+        }
+
+        // 3. Check QR expiry
         if (new Date() > new Date(session.qrExpiresAt)) {
             await logSuspicious(studentId, session._id, 'EXPIRED_QR', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'QR code has expired. Wait for refresh.' });
         }
 
-        // 3. Check if attendance window has closed
+        // 4. Check if attendance window has closed
         if (new Date() > new Date(session.attendanceWindowEnd)) {
             await logSuspicious(studentId, session._id, 'WINDOW_CLOSED', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'Attendance window has closed' });
         }
 
-        // 4. Check duplicate attendance
+        // 5. Check duplicate attendance
         const existingAttendance = await Attendance.findOne({
             session: session._id,
             student: studentId
@@ -59,7 +76,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             return res.status(400).json({ message: 'Attendance already marked for this session' });
         }
 
-        // 5. Check device ID (one device per session)
+        // 6. Check device ID (one device per session)
         const deviceUsed = await Attendance.findOne({
             session: session._id,
             deviceId
@@ -69,7 +86,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             return res.status(400).json({ message: 'This device has already been used to mark attendance in this session' });
         }
 
-        // 6. GPS validation (optional)
+        // 7. GPS validation (optional)
         let gpsResult = { isValid: true, distance: 0 };
         const enforceGps = String(process.env.GPS_ENFORCE || 'false').toLowerCase() === 'true';
 
@@ -95,7 +112,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             }
         }
 
-        // 7. Determine status based on time
+        // 8. Determine status based on time
         const minutesSinceStart = (Date.now() - new Date(session.startTime).getTime()) / (1000 * 60);
         let status;
         let suspiciousFlag = false;
@@ -117,7 +134,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             suspiciousFlag = true;
         }
 
-        // 8. Create attendance record
+        // 9. Create attendance record
         const attendance = new Attendance({
             session: session._id,
             student: studentId,

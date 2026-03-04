@@ -112,6 +112,22 @@ function App() {
                         <ProtectedRoute role="student"><StudentAttendanceReport /></ProtectedRoute>
                     } />
 
+                    {/* Teacher URL aliases — short/alternate paths redirect to canonical routes */}
+                    <Route path="/teacher/home" element={<Navigate to="/teacher/dashboard" replace />} />
+                    <Route path="/teacher/manual" element={<Navigate to="/teacher/manual-attendance" replace />} />
+                    <Route path="/teacher/manual-attendence" element={<Navigate to="/teacher/manual-attendance" replace />} />
+                    <Route path="/teacher/class" element={<Navigate to="/teacher/classes" replace />} />
+                    <Route path="/teacher/sessions" element={<Navigate to="/teacher/session" replace />} />
+                    <Route path="/teacher/report" element={<Navigate to="/teacher/reports" replace />} />
+                    <Route path="/teacher/live" element={<Navigate to="/teacher/session" replace />} />
+
+                    {/* Student URL aliases — short/alternate paths redirect to canonical routes */}
+                    <Route path="/student/home" element={<Navigate to="/student/dashboard" replace />} />
+                    <Route path="/student/report" element={<Navigate to="/student/reports" replace />} />
+                    <Route path="/student/scan-qr" element={<Navigate to="/student/scan" replace />} />
+                    <Route path="/student/mark" element={<Navigate to="/student/scan" replace />} />
+                    <Route path="/student/subject" element={<Navigate to="/student/subjects" replace />} />
+
                     {/* Default redirect */}
                     <Route path="*" element={<Navigate to={getDefaultRedirect()} />} />
                 </Routes>
