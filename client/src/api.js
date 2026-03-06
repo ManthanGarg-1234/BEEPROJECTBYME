@@ -1,3 +1,9 @@
+/*
+Axios is a popular, promise-based HTTP client library used to make asynchronous network requests from browsers or Node.js to backend APIs. 
+It simplifies tasks like sending GET/POST requests, handling JSON data automatically, 
+and managing errors, making it a preferred tool for developers in frameworks like React for API integration.
+*/
+
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
