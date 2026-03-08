@@ -27,11 +27,15 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
         const session = await Session.findOne({ qrToken, isActive: true });
 
         if (!session) {
-            // Check if token exists but is expired
-            const expiredSession = await Session.findOne({ qrToken });
-            if (expiredSession) {
-                await logSuspicious(studentId, expiredSession._id, 'EXPIRED_QR', deviceId, { latitude, longitude });
-                return res.status(400).json({ message: 'QR code has expired. Wait for refresh.' });
+            // Token format is: {classObjectId}_{uuid}_{timestamp}
+            // Extract the class ObjectId prefix to check if this was a recently-refreshed valid token
+            const classPrefix = qrToken ? qrToken.split('_')[0] : '';
+            if (classPrefix && /^[0-9a-f]{24}$/.test(classPrefix)) {
+                const activeSessionForClass = await Session.findOne({ class: classPrefix, isActive: true });
+                if (activeSessionForClass) {
+                    await logSuspicious(studentId, activeSessionForClass._id, 'EXPIRED_QR', deviceId, { latitude, longitude });
+                    return res.status(400).json({ message: 'QR code has expired. Please scan the refreshed QR.' });
+                }
             }
             await logSuspicious(studentId, null, 'INVALID_QR', deviceId, { latitude, longitude });
             return res.status(400).json({ message: 'Invalid QR code' });
@@ -57,7 +61,7 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
         // 3. Check QR expiry
         if (new Date() > new Date(session.qrExpiresAt)) {
             await logSuspicious(studentId, session._id, 'EXPIRED_QR', deviceId, { latitude, longitude });
-            return res.status(400).json({ message: 'QR code has expired. Wait for refresh.' });
+            return res.status(400).json({ message: 'QR code has expired. Please scan the refreshed QR.' });
         }
 
         // 4. Check if attendance window has closed

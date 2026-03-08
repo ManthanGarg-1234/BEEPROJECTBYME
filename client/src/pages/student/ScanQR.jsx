@@ -195,7 +195,7 @@ const ScanQR = () => {
                         scanner.stop().catch(() => { });
                         scannerInstanceRef.current = null;
                         setScanning(false);
-                        markAttendance(decodedText);
+                        markAttendance(decodedText.trim());
                     },
                     () => { } // ignore scan errors
                 );
