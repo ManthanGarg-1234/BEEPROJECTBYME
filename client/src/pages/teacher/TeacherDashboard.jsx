@@ -9,6 +9,9 @@ const TeacherDashboard = () => {
     const [stats, setStats] = useState(null);
     const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [sendingEmail, setSendingEmail] = useState({});  // { studentId: true/false }
+    const [bulkSending, setBulkSending] = useState(false);
+    const [toast, setToast] = useState(null); // { type: 'success'|'error', msg }
     const navigate = useNavigate();
 
     const quickNav = [
@@ -68,6 +71,44 @@ const TeacherDashboard = () => {
     const fetchChart = async (classId) => {
         try { const res = await api.get(`/analytics/daily-chart/${classId}`); setChartData(res.data); }
         catch (err) { console.error(err); }
+    };
+
+    const showToast = (type, msg) => {
+        setToast({ type, msg });
+        setTimeout(() => setToast(null), 4000);
+    };
+
+    const sendWarningEmail = async (studentId) => {
+        setSendingEmail(prev => ({ ...prev, [studentId]: true }));
+        try {
+            const res = await api.post('/analytics/send-warning-email', { studentId, classId: selectedClass });
+            // Update lastWarningSentAt in local state
+            setStats(prev => prev ? {
+                ...prev,
+                studentStats: prev.studentStats.map(s =>
+                    s._id === studentId ? { ...s, lastWarningSentAt: new Date().toISOString() } : s
+                )
+            } : prev);
+            showToast('success', res.data.message || 'Warning email sent!');
+        } catch (err) {
+            showToast('error', err.response?.data?.message || 'Failed to send email');
+        } finally {
+            setSendingEmail(prev => ({ ...prev, [studentId]: false }));
+        }
+    };
+
+    const sendBulkWarnings = async () => {
+        setBulkSending(true);
+        try {
+            const res = await api.post('/analytics/send-bulk-warnings', { classId: selectedClass });
+            // Refresh stats to update lastWarningSentAt badges
+            await fetchDashboard(selectedClass);
+            showToast('success', res.data.message);
+        } catch (err) {
+            showToast('error', err.response?.data?.message || 'Bulk send failed');
+        } finally {
+            setBulkSending(false);
+        }
     };
 
     if (loading) {
@@ -448,20 +489,36 @@ const TeacherDashboard = () => {
                             {/* Student Stats Table - Colorful */}
                             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500 to-purple-400 p-[1px]">
                                 <div className="bg-white dark:bg-dark-800 rounded-[15px] p-6 relative overflow-hidden">
-                                    <div className="flex justify-between items-center mb-5">
+                                    <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
                                         <h3 className="font-bold dark:text-white flex items-center gap-2">
                                             <span className="w-8 h-8 rounded-lg bg-gradient-to-r from-violet-500 to-purple-400 flex items-center justify-center text-white text-sm">👥</span>
                                             Student-wise Summary
                                         </h3>
-                                        <button
-                                            onClick={() => navigate('/teacher/reports')}
-                                            className="bg-gradient-to-r from-violet-500 to-purple-500 text-white text-sm px-5 py-2 rounded-xl font-semibold shadow-md shadow-purple-500/20 transition-shadow duration-200 flex items-center gap-1.5"
-                                        >
-                                            Full Report
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                            </svg>
-                                        </button>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {/* Bulk warn button */}
+                                            {stats.belowThresholdCount > 0 && (
+                                                <button
+                                                    onClick={sendBulkWarnings}
+                                                    disabled={bulkSending}
+                                                    className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-rose-500 text-white text-xs px-4 py-2 rounded-xl font-semibold shadow-md shadow-rose-500/20 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                                                >
+                                                    {bulkSending ? (
+                                                        <><span className="inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending...</>
+                                                    ) : (
+                                                        <>📨 Warn All Below 75% ({stats.belowThresholdCount})</>
+                                                    )}
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => navigate('/teacher/reports')}
+                                                className="bg-gradient-to-r from-violet-500 to-purple-500 text-white text-sm px-5 py-2 rounded-xl font-semibold shadow-md shadow-purple-500/20 transition-shadow duration-200 flex items-center gap-1.5"
+                                            >
+                                                Full Report
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="overflow-x-auto rounded-xl">
                                         <table className="w-full text-sm">
@@ -473,13 +530,24 @@ const TeacherDashboard = () => {
                                                     <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Total</th>
                                                     <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">%</th>
                                                     <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Status</th>
+                                                    <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-100 dark:divide-dark-700">
                                                 {stats.studentStats?.map((s, idx) => (
                                                     <tr key={s._id} className="hover:bg-violet-50/50 dark:hover:bg-violet-900/10 transition-colors duration-200">
                                                         <td className="py-3.5 px-4 font-mono text-xs text-gray-600 dark:text-gray-300">{s.rollNumber}</td>
-                                                        <td className="py-3.5 px-4 dark:text-white font-medium">{s.name}</td>
+                                                        <td className="py-3.5 px-4 dark:text-white font-medium">
+                                                            <div className="flex items-center gap-2">
+                                                                {s.name}
+                                                                {s.lastWarningSentAt && (
+                                                                    <span title={`Warned on ${new Date(s.lastWarningSentAt).toLocaleString()}`}
+                                                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold whitespace-nowrap">
+                                                                        ⚡ Warned
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
                                                         <td className="py-3.5 px-4 text-center">
                                                             <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
                                                                 {s.presentCount}
@@ -505,6 +573,23 @@ const TeacherDashboard = () => {
                                                                 </span>
                                                             )}
                                                         </td>
+                                                        <td className="py-3.5 px-4 text-center">
+                                                            {s.warningLevel ? (
+                                                                <button
+                                                                    onClick={() => sendWarningEmail(s._id)}
+                                                                    disabled={!!sendingEmail[s._id]}
+                                                                    title={`Send attendance warning email to ${s.name}`}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 text-xs font-semibold hover:bg-orange-100 dark:hover:bg-orange-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                                >
+                                                                    {sendingEmail[s._id] ? (
+                                                                        <span className="inline-block w-3 h-3 border-2 border-orange-300 border-t-orange-600 rounded-full animate-spin" />
+                                                                    ) : '📧'}
+                                                                    Warn
+                                                                </button>
+                                                            ) : (
+                                                                <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
+                                                            )}
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -516,8 +601,38 @@ const TeacherDashboard = () => {
                     )}
                 </div>
             </div>
+
+            {/* Toast Notification */}
+            {toast && (
+                <div style={{
+                    position: 'fixed', bottom: 28, right: 28, zIndex: 9999,
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    background: toast.type === 'success'
+                        ? 'linear-gradient(135deg, #065f46, #064e3b)'
+                        : 'linear-gradient(135deg, #7f1d1d, #450a0a)',
+                    border: `1px solid ${toast.type === 'success' ? '#10b981' : '#ef4444'}`,
+                    borderRadius: 14, padding: '14px 20px',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                    maxWidth: 360, animation: 'slideUp 0.3s ease-out'
+                }}>
+                    <span style={{ fontSize: 20 }}>{toast.type === 'success' ? '✅' : '❌'}</span>
+                    <p style={{ color: '#f0fdf4', fontSize: 13, fontWeight: 600, margin: 0 }}>{toast.msg}</p>
+                    <button onClick={() => setToast(null)} style={{
+                        background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%',
+                        width: 22, height: 22, cursor: 'pointer', color: '#fff',
+                        fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}>×</button>
+                </div>
+            )}
+            <style>{`
+                @keyframes slideUp {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to   { transform: translateY(0);    opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 };
 
 export default TeacherDashboard;
+

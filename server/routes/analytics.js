@@ -5,6 +5,7 @@ const Class = require('../models/Class');
 const User = require('../models/User');
 const { auth, authorize } = require('../middleware/auth');
 const { calculateAttendancePercentage, getWarningLevel, evaluateClassAttendance } = require('../utils/evaluationEngine');
+const { sendWarningEmail } = require('../utils/emailService');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ const router = express.Router();
 router.get('/dashboard/:classId', auth, authorize('teacher'), async (req, res) => {
     try {
         const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase(), teacher: req.user._id })
-            .populate('students', 'name email rollNumber');
+            .populate('students', 'name email rollNumber lastWarningSentAt');
 
         if (!classDoc) {
             return res.status(404).json({ message: 'Class not found or you do not have access' });
@@ -60,7 +61,8 @@ router.get('/dashboard/:classId', auth, authorize('teacher'), async (req, res) =
                 percentage,
                 presentCount,
                 totalSessions,
-                warningLevel
+                warningLevel,
+                lastWarningSentAt: student.lastWarningSentAt || null
             };
         });
 
@@ -612,4 +614,153 @@ router.get('/group-day-pies/:subjectCode/:date', auth, authorize('teacher'), asy
     }
 });
 
+// @route   POST /api/analytics/send-warning-email
+// @desc    Send attendance warning email to a single student
+// @access  Teacher
+router.post('/send-warning-email', auth, authorize('teacher'), async (req, res) => {
+    try {
+        const { studentId, classId } = req.body;
+        if (!studentId || !classId) {
+            return res.status(400).json({ message: 'studentId and classId are required' });
+        }
+
+        // Verify teacher owns this class
+        const classDoc = await Class.findOne({ classId: classId.toUpperCase(), teacher: req.user._id }).lean();
+        if (!classDoc) {
+            return res.status(404).json({ message: 'Class not found or access denied' });
+        }
+
+        // Get student info
+        const student = await User.findById(studentId).select('name email rollNumber');
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Calculate attendance percentage for this class
+        const sessions = await Session.find({ class: classDoc._id }).select('_id').lean();
+        const totalSessions = sessions.length;
+        if (totalSessions === 0) {
+            return res.status(400).json({ message: 'No sessions found for this class' });
+        }
+        const sessionIds = sessions.map(s => s._id);
+
+        const attCount = await Attendance.countDocuments({
+            session: { $in: sessionIds },
+            student: studentId,
+            status: { $in: ['Present', 'Late'] }
+        });
+
+        const percentage = Math.round((attCount / totalSessions) * 10000) / 100;
+        const warningLevel = getWarningLevel(percentage);
+
+        // Send warning email
+        const sent = await sendWarningEmail(student.email, student.name, {
+            subject: classDoc.subject,
+            percentage,
+            warningLevel: warningLevel || 'Warning'
+        });
+
+        // Update lastWarningSentAt on the student
+        await User.findByIdAndUpdate(studentId, { lastWarningSentAt: new Date() });
+
+        if (!sent) {
+            return res.status(500).json({ message: 'Email could not be sent. Check SMTP configuration.' });
+        }
+
+        res.json({
+            success: true,
+            message: `Warning email sent to ${student.name} (${student.email})`,
+            percentage
+        });
+    } catch (error) {
+        console.error('Send warning email error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   POST /api/analytics/send-bulk-warnings
+// @desc    Send attendance warning emails to all students below 75% in a class
+// @access  Teacher
+router.post('/send-bulk-warnings', auth, authorize('teacher'), async (req, res) => {
+    try {
+        const { classId } = req.body;
+        if (!classId) {
+            return res.status(400).json({ message: 'classId is required' });
+        }
+
+        // Verify teacher owns this class
+        const classDoc = await Class.findOne({ classId: classId.toUpperCase(), teacher: req.user._id })
+            .populate('students', 'name email rollNumber lastWarningSentAt');
+        if (!classDoc) {
+            return res.status(404).json({ message: 'Class not found or access denied' });
+        }
+
+        const sessions = await Session.find({ class: classDoc._id }).select('_id').lean();
+        const totalSessions = sessions.length;
+        if (totalSessions === 0) {
+            return res.status(400).json({ message: 'No sessions found for this class' });
+        }
+        const sessionIds = sessions.map(s => s._id);
+
+        // Aggregate attendance counts per student
+        const attAgg = await Attendance.aggregate([
+            { $match: { session: { $in: sessionIds }, class: classDoc._id, status: { $in: ['Present', 'Late'] } } },
+            { $group: { _id: '$student', count: { $sum: 1 } } }
+        ]);
+        const attMap = {};
+        attAgg.forEach(({ _id, count }) => { attMap[_id.toString()] = count; });
+
+        const COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours
+        const now = Date.now();
+
+        let sent = 0, failed = 0, skipped = 0;
+        const results = [];
+
+        for (const student of classDoc.students) {
+            const presentCount = attMap[student._id.toString()] || 0;
+            const percentage = Math.round((presentCount / totalSessions) * 10000) / 100;
+
+            if (percentage >= 75) continue; // Only warn below-threshold students
+
+            // Skip if warned recently (within cooldown period)
+            if (student.lastWarningSentAt && (now - new Date(student.lastWarningSentAt).getTime()) < COOLDOWN_MS) {
+                skipped++;
+                results.push({ name: student.name, status: 'skipped', reason: 'Recently warned' });
+                continue;
+            }
+
+            const warningLevel = getWarningLevel(percentage);
+            try {
+                const emailSent = await sendWarningEmail(student.email, student.name, {
+                    subject: classDoc.subject,
+                    percentage,
+                    warningLevel: warningLevel || 'Warning'
+                });
+
+                if (emailSent) {
+                    await User.findByIdAndUpdate(student._id, { lastWarningSentAt: new Date() });
+                    sent++;
+                    results.push({ name: student.name, status: 'sent', percentage });
+                } else {
+                    failed++;
+                    results.push({ name: student.name, status: 'failed' });
+                }
+            } catch (e) {
+                failed++;
+                results.push({ name: student.name, status: 'failed', error: e.message });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Bulk warning complete: ${sent} sent, ${failed} failed, ${skipped} skipped (recently warned)`,
+            sent, failed, skipped, results
+        });
+    } catch (error) {
+        console.error('Bulk warning error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 module.exports = router;
+

@@ -73,4 +73,11 @@ const emitSessionUpdate = (io, sessionId, data) => {
     io.to(`session:${sessionId}`).emit('session-update', data);
 };
 
-module.exports = { initSocketHandler, emitAttendanceUpdate, emitQRRefresh, emitSessionUpdate };
+/**
+ * Emit proxy/duplicate-device alert to teacher's session room
+ */
+const emitProxyAlert = (io, sessionId, data) => {
+    io.to(`session:${sessionId}`).emit('proxy-alert', data);
+};
+
+module.exports = { initSocketHandler, emitAttendanceUpdate, emitQRRefresh, emitSessionUpdate, emitProxyAlert };

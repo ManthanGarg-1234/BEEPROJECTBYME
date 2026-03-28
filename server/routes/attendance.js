@@ -6,7 +6,7 @@ const SuspiciousLog = require('../models/SuspiciousLog');
 const { auth, authorize } = require('../middleware/auth');
 const { attendanceValidation } = require('../middleware/validators');
 const { isWithinRadius } = require('../utils/gpsValidator');
-const { emitAttendanceUpdate } = require('../utils/socketHandler');
+const { emitAttendanceUpdate, emitProxyAlert } = require('../utils/socketHandler');
 
 const router = express.Router();
 
@@ -84,9 +84,29 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
         const deviceUsed = await Attendance.findOne({
             session: session._id,
             deviceId
-        });
+        }).populate('student', 'name rollNumber email');
         if (deviceUsed) {
             await logSuspicious(studentId, session._id, 'DUPLICATE_DEVICE', deviceId, { latitude, longitude });
+            // Emit real-time proxy alert to teacher's session room
+            const io = req.app.get('io');
+            if (io) {
+                emitProxyAlert(io, session._id.toString(), {
+                    type: 'DUPLICATE_DEVICE',
+                    deviceId,
+                    proxyStudent: {
+                        _id: req.user._id,
+                        name: req.user.name,
+                        rollNumber: req.user.rollNumber
+                    },
+                    victimStudent: {
+                        _id: deviceUsed.student?._id,
+                        name: deviceUsed.student?.name,
+                        rollNumber: deviceUsed.student?.rollNumber
+                    },
+                    sessionId: session._id.toString(),
+                    timestamp: new Date().toISOString()
+                });
+            }
             return res.status(400).json({ message: 'This device has already been used to mark attendance in this session' });
         }
 

@@ -8,6 +8,7 @@ const LiveAttendance = () => {
     const [session, setSession] = useState(null);
     const [attendance, setAttendance] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [proxyAlerts, setProxyAlerts] = useState([]);
     const socket = useSocket();
     const navigate = useNavigate();
 
@@ -33,12 +34,24 @@ const LiveAttendance = () => {
             }
         });
 
+        socket.on('proxy-alert', (data) => {
+            setProxyAlerts(prev => [
+                { ...data, id: `${Date.now()}-${Math.random()}` },
+                ...prev
+            ]);
+        });
+
         return () => {
             socket.emit('leave-session', sessionId);
             socket.off('attendance-update');
             socket.off('session-update');
+            socket.off('proxy-alert');
         };
     }, [socket, sessionId]);
+
+    const dismissAlert = (id) => {
+        setProxyAlerts(prev => prev.filter(a => a.id !== id));
+    };
 
     const fetchData = async () => {
         try {
@@ -73,6 +86,112 @@ const LiveAttendance = () => {
                 </svg>
                 Back to Session
             </button>
+
+            {/* CSS keyframes for proxy alert pulse */}
+            <style>{`
+                @keyframes proxyPulse {
+                    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+                    50% { box-shadow: 0 0 0 10px rgba(239,68,68,0.22); }
+                }
+                .proxy-alert-card {
+                    animation: proxyPulse 1.3s ease-in-out 3;
+                }
+            `}</style>
+
+            {/* ── Proxy Alert Panel ─────────────────────────────────────────── */}
+            {proxyAlerts.length > 0 && (
+                <div className="mb-6 space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#fca5a5', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                            🚨 Proxy Attempt Alerts ({proxyAlerts.length})
+                        </span>
+                    </div>
+                    {proxyAlerts.map(alert => (
+                        <div
+                            key={alert.id}
+                            className="proxy-alert-card"
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(239,68,68,0.13), rgba(234,88,12,0.10))',
+                                border: '1.5px solid rgba(239,68,68,0.5)',
+                                borderRadius: '14px',
+                                padding: '16px 20px',
+                            }}
+                        >
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-3 min-w-0">
+                                    <div style={{
+                                        minWidth: 42, height: 42,
+                                        borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #ef4444, #f97316)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: 20, flexShrink: 0,
+                                        boxShadow: '0 0 18px rgba(239,68,68,0.45)'
+                                    }}>🚨</div>
+                                    <div className="min-w-0">
+                                        <p style={{ fontWeight: 800, fontSize: 15, color: '#fca5a5', marginBottom: 8 }}>
+                                            Proxy Attendance Detected!
+                                        </p>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                                            {/* Attacker card */}
+                                            <div style={{
+                                                background: 'rgba(239,68,68,0.15)',
+                                                border: '1px solid rgba(239,68,68,0.35)',
+                                                borderRadius: 10, padding: '8px 14px'
+                                            }}>
+                                                <p style={{ fontSize: 10, color: '#f87171', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
+                                                    🕵️ Proxy Marker (Is Marking)
+                                                </p>
+                                                <p style={{ fontWeight: 700, color: '#fef2f2', fontSize: 14 }}>
+                                                    {alert.proxyStudent?.name || 'Unknown'}
+                                                </p>
+                                                <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#fca5a5', marginTop: 2 }}>
+                                                    Roll: {alert.proxyStudent?.rollNumber || '—'}
+                                                </p>
+                                            </div>
+                                            {/* arrow */}
+                                            <span style={{ color: '#fb923c', fontWeight: 700, fontSize: 20 }}>→</span>
+                                            {/* Victim card */}
+                                            <div style={{
+                                                background: 'rgba(234,88,12,0.15)',
+                                                border: '1px solid rgba(234,88,12,0.35)',
+                                                borderRadius: 10, padding: '8px 14px'
+                                            }}>
+                                                <p style={{ fontSize: 10, color: '#fb923c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
+                                                    👤 Proxy For (Victim's Attendance)
+                                                </p>
+                                                <p style={{ fontWeight: 700, color: '#fff7ed', fontSize: 14 }}>
+                                                    {alert.victimStudent?.name || 'Unknown'}
+                                                </p>
+                                                <p style={{ fontFamily: 'monospace', fontSize: 12, color: '#fdba74', marginTop: 2 }}>
+                                                    Roll: {alert.victimStudent?.rollNumber || '—'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p style={{ marginTop: 10, fontSize: 12, color: '#9ca3af' }}>
+                                            📱 Device ID:&nbsp;
+                                            <span style={{ fontFamily: 'monospace', color: '#d1d5db' }}>{alert.deviceId || '—'}</span>
+                                            &nbsp;&nbsp;🕐 {alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString() : ''}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => dismissAlert(alert.id)}
+                                    title="Dismiss"
+                                    style={{
+                                        background: 'rgba(239,68,68,0.18)',
+                                        border: '1px solid rgba(239,68,68,0.4)',
+                                        borderRadius: '50%', width: 30, height: 30,
+                                        cursor: 'pointer', color: '#fca5a5',
+                                        fontWeight: 700, fontSize: 16, flexShrink: 0,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        lineHeight: 1
+                                    }}
+                                >×</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
@@ -112,9 +231,18 @@ const LiveAttendance = () => {
                     <p className="text-3xl font-bold text-primary-500">{attendance.length}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Marked</p>
                 </div>
-                <div className="stat-card text-center">
+                <div className="stat-card text-center" style={{ position: 'relative' }}>
                     <p className="text-3xl font-bold text-red-500">{attendance.filter(a => a.suspiciousFlag).length}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Suspicious</p>
+                    {proxyAlerts.length > 0 && (
+                        <span style={{
+                            position: 'absolute', top: 8, right: 8,
+                            background: '#ef4444', color: '#fff',
+                            borderRadius: '50%', width: 20, height: 20,
+                            fontSize: 11, fontWeight: 700,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>{proxyAlerts.length}</span>
+                    )}
                 </div>
             </div>
 
