@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
+import ToastContainer from './components/ToastContainer';
 
 // Lazy-loaded pages — Vite will split these into separate chunks
 // so first-visit only downloads the code for the current page
@@ -44,6 +45,7 @@ function App() {
 
     return (
         <div className={`app-shell${reducedMotion ? ' app-shell--reduced' : ''}`}>
+            <ToastContainer />
             <div className="app-bg" aria-hidden="true">
                 {showVideo && (
                     <video

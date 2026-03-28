@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../../context/SocketContext';
 import api from '../../api';
+import { notifyProxyAlert, requestNotificationPermission, updatePageTitleBadge } from '../../utils/notificationManager';
 
 const LiveAttendance = () => {
     const { sessionId } = useParams();
@@ -14,6 +15,12 @@ const LiveAttendance = () => {
 
     useEffect(() => {
         fetchData();
+        // Request browser notification permission on mount
+        requestNotificationPermission();
+        return () => {
+            // Reset page title when leaving
+            updatePageTitleBadge(0);
+        };
     }, [sessionId]);
 
     useEffect(() => {
@@ -35,10 +42,10 @@ const LiveAttendance = () => {
         });
 
         socket.on('proxy-alert', (data) => {
-            setProxyAlerts(prev => [
-                { ...data, id: `${Date.now()}-${Math.random()}` },
-                ...prev
-            ]);
+            const alertWithId = { ...data, id: `${Date.now()}-${Math.random()}` };
+            setProxyAlerts(prev => [alertWithId, ...prev]);
+            // Trigger all notification types
+            notifyProxyAlert(data);
         });
 
         return () => {
@@ -50,7 +57,12 @@ const LiveAttendance = () => {
     }, [socket, sessionId]);
 
     const dismissAlert = (id) => {
-        setProxyAlerts(prev => prev.filter(a => a.id !== id));
+        setProxyAlerts(prev => {
+            const updated = prev.filter(a => a.id !== id);
+            // Update page title badge count
+            updatePageTitleBadge(updated.length);
+            return updated;
+        });
     };
 
     const fetchData = async () => {
