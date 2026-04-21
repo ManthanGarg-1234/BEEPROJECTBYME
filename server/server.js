@@ -77,6 +77,8 @@ app.use('/api/classes', require('./routes/class'));
 app.use('/api/sessions', require('./routes/session'));
 app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/marks', require('./routes/marks'));
+app.use('/api/email', require('./routes/email'));
 
 // Health check
 app.get('/api/health', (req, res) => {

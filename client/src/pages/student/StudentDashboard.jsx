@@ -125,12 +125,30 @@ const StudentDashboard = () => {
     ];
 
     const selectedClass = data.classes.find((cls) => cls.classId === selectedClassId) || data.classes[0];
-    const marksBySubject = {
-        DSA001: { quiz: 18, mid: 26, assignment: 9, total: 53 },
-        BEE01: { quiz: 16, mid: 24, assignment: 10, total: 50 },
-        CSE201: { quiz: 17, mid: 28, assignment: 8, total: 53 },
-        CSE252: { quiz: 15, mid: 25, assignment: 9, total: 49 },
-        CSE341: { quiz: 19, mid: 27, assignment: 10, total: 56 },
+    const [marksData, setMarksData] = useState(null);
+    const [marksLoading, setMarksLoading] = useState(false);
+
+    useEffect(() => {
+        if (selectedClass && selectedClass._id) {
+            fetchMarks(selectedClass._id);
+        }
+    }, [selectedClass?._id]);
+
+    const fetchMarks = async (classId) => {
+        setMarksLoading(true);
+        try {
+            const res = await api.get(`/marks/student/${classId}`);
+            if (res.data.found) {
+                setMarksData(res.data);
+            } else {
+                setMarksData(null);
+            }
+        } catch (err) {
+            console.error('Failed to load marks:', err);
+            setMarksData(null);
+        } finally {
+            setMarksLoading(false);
+        }
     };
 
     const sortedClasses = [...data.classes].sort((a, b) => {
@@ -217,26 +235,55 @@ const StudentDashboard = () => {
 
                     <div>
                         <h3 className="text-sm font-semibold text-slate-200 mb-3">Marks Snapshot</h3>
-                        <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-3">
-                            <p className="text-xs text-slate-400">{selectedClass.subject}</p>
-                            <div className="flex items-center justify-between mt-2">
-                                <span className="text-sm font-semibold text-white">Total</span>
-                                <span className="text-sm font-bold text-cyan-200">
-                                    {(marksBySubject[selectedClass.classId] || { total: 0 }).total}/60
-                                </span>
+                        {marksLoading ? (
+                            <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-3">
+                                <div className="h-24 flex items-center justify-center text-xs text-slate-400">Loading...</div>
                             </div>
-                            <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
-                                {['quiz', 'mid', 'assignment'].map((key) => (
-                                    <div key={key} className="rounded-lg bg-slate-800/70 border border-slate-700/60 px-2 py-2 text-center">
-                                        <p className="text-slate-400 uppercase">{key}</p>
-                                        <p className="text-white font-semibold mt-1">
-                                            {(marksBySubject[selectedClass.classId] || { [key]: 0 })[key]}
-                                        </p>
+                        ) : marksData && marksData.found ? (
+                            <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-3">
+                                <p className="text-xs text-slate-400">{selectedClass.subject}</p>
+                                <div className="flex items-center justify-between mt-2">
+                                    <span className="text-sm font-semibold text-white">Total</span>
+                                    <span className="text-sm font-bold text-cyan-200">
+                                        {marksData.total}/{marksData.maxTotal}
+                                    </span>
+                                </div>
+                                <div className="mt-2">
+                                    <div className="flex items-center justify-between text-xs mb-1">
+                                        <span className="text-slate-300">Grade:</span>
+                                        <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${
+                                            marksData.grade === 'A' ? 'bg-green-500/20 text-green-400' :
+                                            marksData.grade === 'B' ? 'bg-blue-500/20 text-blue-400' :
+                                            marksData.grade === 'C' ? 'bg-yellow-500/20 text-yellow-400' :
+                                            marksData.grade === 'D' ? 'bg-orange-500/20 text-orange-400' :
+                                            marksData.grade === 'F' ? 'bg-red-500/20 text-red-400' :
+                                            'bg-gray-500/20 text-gray-400'
+                                        }`}>
+                                            {marksData.grade}
+                                        </span>
                                     </div>
-                                ))}
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-slate-300">Percentage:</span>
+                                        <span className="font-bold text-white">{marksData.percentage.toFixed(1)}%</span>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
+                                    {['quiz', 'midterm', 'assignment'].map((key) => (
+                                        <div key={key} className="rounded-lg bg-slate-800/70 border border-slate-700/60 px-2 py-2 text-center">
+                                            <p className="text-slate-400 uppercase text-[10px]">{key}</p>
+                                            <p className="text-white font-semibold mt-1">
+                                                {marksData[key].obtained}/{marksData[key].max}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <p className="text-[10px] text-slate-500 mt-3">Sample marks for CSE curriculum</p>
-                        </div>
+                        ) : (
+                            <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-3 text-center">
+                                <p className="text-xs text-slate-400">Marks not yet available</p>
+                                <p className="text-[10px] text-slate-500 mt-2">Contact your teacher to enter marks</p>
+                            </div>
+                        )}
                     </div>
                 </aside>
 

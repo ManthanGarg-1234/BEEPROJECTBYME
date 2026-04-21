@@ -19,6 +19,8 @@ const LiveAttendance = lazy(() => import('./pages/teacher/LiveAttendance'));
 const AttendanceReport = lazy(() => import('./pages/teacher/AttendanceReport'));
 const EvaluationPanel = lazy(() => import('./pages/teacher/EvaluationPanel'));
 const ManualAttendance = lazy(() => import('./pages/teacher/ManualAttendance'));
+const MarksManagement = lazy(() => import('./pages/teacher/MarksManagement'));
+const EmailNotifications = lazy(() => import('./pages/teacher/EmailNotifications'));
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
 const StudentAttendanceReport = lazy(() => import('./pages/student/AttendanceReport'));
 const Subjects = lazy(() => import('./pages/student/Subjects'));
@@ -102,6 +104,12 @@ function App() {
                         } />
                         <Route path="/teacher/manual-attendance" element={
                             <ProtectedRoute role="teacher"><ManualAttendance /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/marks" element={
+                            <ProtectedRoute role="teacher"><MarksManagement /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/email" element={
+                            <ProtectedRoute role="teacher"><EmailNotifications /></ProtectedRoute>
                         } />
 
                         {/* Student Routes */}

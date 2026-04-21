@@ -8,16 +8,10 @@ import {
 import api from '../../api';
 
 /* ─── constants ──────────────────────────────────────────────────────────── */
-const GROUPS   = ['G18', 'G19', 'G20', 'G21', 'G22'];
-const ALL_SUBJECTS = [
-    { code: 'CN',     name: 'Computer Networks',   icon: '🌐' },
-    { code: 'BE',     name: 'Backend Engineering',  icon: '⚙️' },
-    { code: 'DSOOPS', name: 'DSOOPS',               icon: '🗂️' },
-    { code: 'LINUX',  name: 'Linux Administration', icon: '🐧' },
-    { code: 'DM',     name: 'Discrete Mathematics', icon: '📐' },
-];
-
-const GROUP_COLORS  = { G18: '#6366f1', G19: '#22d3ee', G20: '#10b981', G21: '#f59e0b', G22: '#f43f5e' };
+// Groups, subjects, and colors are now derived dynamically from the API response.
+// See the component state: GROUPS, ALL_SUBJECTS, GROUP_COLORS.
+const COLOR_PALETTE = ['#6366f1', '#22d3ee', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#ec4899', '#14b8a6', '#a855f7', '#06b6d4'];
+const SUBJECT_ICONS = { CN: '🌐', BE: '⚙️', DSOOPS: '🗂️', LINUX: '🐧', LA: '🐧', DM: '📐', MATH: '📐', DSA: '💻', OS: '🖥️', DBMS: '🗄️' };
 const STATUS_COLORS = { Present: '#10b981', Late: '#f59e0b', Absent: '#ef4444' };
 const TP = { contentStyle: { backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: 10, color: '#e2e8f0', fontSize: 12 } };
 
@@ -71,6 +65,15 @@ const AttendanceReport = () => {
     const [myClasses,  setMyClasses]  = useState([]);
     const [mySubjects, setMySubjects] = useState([]);
 
+    /* dynamically derived groups & subjects from the overview API */
+    const [GROUPS, setGROUPS]           = useState([]);
+    const [ALL_SUBJECTS, setALL_SUBJECTS] = useState([]);
+
+    /* dynamic group colors */
+    const GROUP_COLORS = useMemo(() =>
+        Object.fromEntries(GROUPS.map((g, i) => [g, COLOR_PALETTE[i % COLOR_PALETTE.length]])),
+    [GROUPS]);
+
     /* selector state */
     const [subCode, setSubCode]     = useState('');
     const [mainTab, setMainTab]     = useState('overview');     // overview | daily | compare | heatmap
@@ -95,17 +98,33 @@ const AttendanceReport = () => {
             const classes = r.data;
             setMyClasses(classes);
             // classId format: CODE-GROUP e.g. CN-G18
-            const codes = [...new Set(classes.map(c => c.classId.split('-')[0]))];
-            const filtered = ALL_SUBJECTS.filter(s => codes.includes(s.code));
+            const codes = [...new Set(classes.map(c => {
+                const dashIdx = c.classId.indexOf('-');
+                return dashIdx !== -1 ? c.classId.substring(0, dashIdx) : c.classId;
+            }))];
+            const filtered = codes.map(code => {
+                const cls = classes.find(c => c.classId.startsWith(code + '-'));
+                return { code, name: cls?.subject || code, icon: SUBJECT_ICONS[code] || '📖' };
+            });
             setMySubjects(filtered);
             if (filtered.length > 0) {
                 setSubCode(filtered[0].code);
                 const firstClass = classes.find(c => c.classId.startsWith(filtered[0].code + '-'));
-                setHeatmapClass(firstClass?.classId || `${filtered[0].code}-G18`);
+                setHeatmapClass(firstClass?.classId || '');
             }
             // Fetch overview immediately after we know which classes the teacher has
             api.get('/analytics/group-overview')
-                .then(r2 => setOverview(r2.data))
+                .then(r2 => {
+                    setOverview(r2.data);
+                    // Derive GROUPS and ALL_SUBJECTS from the API response
+                    if (r2.data.groups) setGROUPS(r2.data.groups);
+                    if (r2.data.subjects) {
+                        setALL_SUBJECTS(r2.data.subjects.map(s => ({
+                            ...s,
+                            icon: SUBJECT_ICONS[s.code] || '📖'
+                        })));
+                    }
+                })
                 .catch(console.error)
                 .finally(() => setLoadingOv(false));
         }).catch(() => setLoadingOv(false));
@@ -183,7 +202,9 @@ const AttendanceReport = () => {
     /* ── export CSV ─────────────────────────────────────────────────────── */
     const exportCSV = async () => {
         try {
-            const r = await api.get(`/analytics/csv/${subCode}-G18`, { responseType: 'blob' });
+            const firstGroup = GROUPS[0] || '';
+            const classId = firstGroup ? `${subCode}-${firstGroup}` : subCode;
+            const r = await api.get(`/analytics/csv/${classId}`, { responseType: 'blob' });
             const url = URL.createObjectURL(r.data);
             const a = document.createElement('a'); a.href = url;
             a.download = `attendance_${subCode}.csv`; a.click();
@@ -343,7 +364,7 @@ const AttendanceReport = () => {
         if (loadingSub) return <Skeleton />;
         if (!subjectDaily || !mergedDaily.length) return <NoData msg="No daily data." />;
 
-        const firstGroup = subjectDaily.daily?.G18 || [];
+        const firstGroup = subjectDaily.daily?.[GROUPS[0]] || [];
 
         return (
             <div className="space-y-6">
@@ -654,10 +675,13 @@ const AttendanceReport = () => {
     };
 
     /* ── current subject info ────────────────────────────────────────────── */
-    const curSub = ALL_SUBJECTS.find(s => s.code === subCode);
+    const curSub = ALL_SUBJECTS.find(s => s.code === subCode) || mySubjects.find(s => s.code === subCode);
 
     // Classes for current subject
-    const curSubClasses = myClasses.filter(c => c.classId.split('-')[0] === subCode);
+    const curSubClasses = myClasses.filter(c => {
+        const dashIdx = c.classId.indexOf('-');
+        return dashIdx !== -1 ? c.classId.substring(0, dashIdx) === subCode : false;
+    });
 
     return (
         <div className="page-container">

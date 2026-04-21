@@ -59,6 +59,12 @@ const Navbar = () => {
                                 <NavLink to="/teacher/manual-attendance" className={linkClass}>
                                     <span className="flex items-center gap-1.5">✏️ Manual</span>
                                 </NavLink>
+                                <NavLink to="/teacher/marks" className={linkClass}>
+                                    <span className="flex items-center gap-1.5">📋 Marks</span>
+                                </NavLink>
+                                <NavLink to="/teacher/email" className={linkClass}>
+                                    <span className="flex items-center gap-1.5">✉️ Email</span>
+                                </NavLink>
                                 <NavLink to="/teacher/reports" className={linkClass}>
                                     <span className="flex items-center gap-1.5">📈 Reports</span>
                                 </NavLink>
@@ -152,6 +158,8 @@ const Navbar = () => {
                                     <NavLink to="/teacher/classes" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📚 Classes</NavLink>
                                     <NavLink to="/teacher/session" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>🎯 Session</NavLink>
                                     <NavLink to="/teacher/manual-attendance" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>✏️ Manual</NavLink>
+                                    <NavLink to="/teacher/marks" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📋 Marks</NavLink>
+                                    <NavLink to="/teacher/email" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>✉️ Email</NavLink>
                                     <NavLink to="/teacher/reports" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📈 Reports</NavLink>
                                 </>
                             )}
