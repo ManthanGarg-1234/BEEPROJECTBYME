@@ -12,12 +12,16 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         if (isAuthenticated && token) {
-            const SOCKET_URL = typeof window !== 'undefined'
-                ? window.location.origin
-                : (import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000');
+            // Use API_URL for Socket connection (same backend as REST API)
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const SOCKET_URL = API_URL.replace('/api', ''); // Remove /api if present
             const newSocket = io(SOCKET_URL, {
                 auth: { token },
-                transports: ['websocket', 'polling']
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                reconnectionAttempts: 5
             });
 
             newSocket.on('connect', () => {
