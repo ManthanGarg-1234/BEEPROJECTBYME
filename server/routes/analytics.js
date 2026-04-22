@@ -336,6 +336,7 @@ router.get('/student-dashboard', auth, authorize('student'), async (req, res) =>
             const warningLevel = getWarningLevel(percentage);
 
             return {
+                _id: cls._id,
                 classId: cls.classId,
                 subject: cls.subject,
                 teacher: cls.teacher?.name || 'Unknown',
