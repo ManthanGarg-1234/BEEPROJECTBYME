@@ -21,7 +21,7 @@
         "mongoose": "^8.23.0",
         "multer": "^2.0.2",
         "node-cron": "^3.0.3",
-        "nodemailer": "^6.9.16",
+        "nodemailer": "^8.0.5",
         "qrcode": "^1.5.4",
         "socket.io": "^4.8.1",
         "uuid": "^11.0.5"
