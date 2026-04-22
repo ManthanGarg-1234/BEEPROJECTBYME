@@ -33,8 +33,10 @@ const calculateAttendancePercentage = async (studentId, classId) => {
  * Get warning level based on attendance percentage
  */
 const getWarningLevel = (percentage) => {
-    if (percentage < 65) return 'Critical';
-    if (percentage < 75) return 'Warning';
+    const CRITICAL = parseInt(process.env.CRITICAL_PERCENTAGE) || 65;
+    const WARNING = parseInt(process.env.WARNING_PERCENTAGE) || 75;
+    if (percentage < CRITICAL) return 'Critical';
+    if (percentage < WARNING) return 'Warning';
     return null;
 };
 

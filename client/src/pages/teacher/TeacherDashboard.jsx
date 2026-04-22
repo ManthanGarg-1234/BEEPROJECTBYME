@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import api from '../../api';
+import { useSocket } from '../../context/SocketContext';
 
 const TeacherDashboard = () => {
     const [classes, setClasses] = useState([]);
@@ -13,6 +14,7 @@ const TeacherDashboard = () => {
     const [bulkSending, setBulkSending] = useState(false);
     const [toast, setToast] = useState(null); // { type: 'success'|'error', msg }
     const navigate = useNavigate();
+    const socket = useSocket();
 
     const quickNav = [
         { label: 'Dashboard', path: '/teacher/dashboard', icon: '📊' },
@@ -53,6 +55,19 @@ const TeacherDashboard = () => {
             fetchChart(selectedClass);
         }
     }, [selectedClass]);
+
+    // Real-time: auto-refresh dashboard when attendance is marked during a live session
+    useEffect(() => {
+        if (!socket || !selectedClass) return;
+        const handleDashboardRefresh = (data) => {
+            if (data.classId === selectedClass) {
+                fetchDashboard(selectedClass);
+                fetchChart(selectedClass);
+            }
+        };
+        socket.on('dashboard-refresh', handleDashboardRefresh);
+        return () => socket.off('dashboard-refresh', handleDashboardRefresh);
+    }, [socket, selectedClass]);
 
     const fetchClasses = async () => {
         try {

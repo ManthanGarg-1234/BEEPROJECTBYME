@@ -102,6 +102,16 @@ router.post('/start', auth, authorize('teacher'), sessionValidation, async (req,
 
         qrIntervals.set(session._id.toString(), intervalId);
 
+        // Notify enrolled students that a session has started
+        if (io) {
+            io.to(`class:${classDoc.classId}`).emit('session-started', {
+                classId: classDoc.classId,
+                subject: classDoc.subject,
+                sessionId: session._id,
+                startTime: session.startTime
+            });
+        }
+
         res.status(201).json({
             session: {
                 _id: session._id,

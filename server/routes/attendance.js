@@ -136,20 +136,22 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
             }
         }
 
-        // 8. Determine status based on time
+        // 8. Determine status based on time (env-configurable thresholds)
+        const PRESENT_THRESHOLD = parseInt(process.env.PRESENT_THRESHOLD_MINUTES) || 5;
+        const LATE_THRESHOLD = parseInt(process.env.LATE_THRESHOLD_MINUTES) || 15;
         const minutesSinceStart = (Date.now() - new Date(session.startTime).getTime()) / (1000 * 60);
         let status;
         let suspiciousFlag = false;
 
-        if (minutesSinceStart <= 5) {
+        if (minutesSinceStart <= PRESENT_THRESHOLD) {
             status = 'Present';
-        } else if (minutesSinceStart <= 15) {
+        } else if (minutesSinceStart <= LATE_THRESHOLD) {
             status = 'Late';
         } else {
             await logSuspicious(studentId, session._id, 'LATE_REJECTED', deviceId, { latitude, longitude },
                 `${Math.round(minutesSinceStart)} minutes late`);
             return res.status(400).json({
-                message: 'Too late to mark attendance (>15 minutes). Attendance rejected.'
+                message: `Too late to mark attendance (>${LATE_THRESHOLD} minutes). Attendance rejected.`
             });
         }
 
@@ -190,6 +192,8 @@ router.post('/mark', auth, authorize('student'), attendanceValidation, async (re
                 markedAt: attendance.markedAt,
                 suspiciousFlag
             });
+            // Notify teacher dashboard to auto-refresh stats
+            io.to(`session:${session._id}`).emit('dashboard-refresh', { classId: sessionClass.classId });
         }
 
         res.status(201).json({
@@ -391,6 +395,12 @@ router.post('/manual', auth, authorize('teacher'), async (req, res) => {
                 markedAt: attendance?.markedAt || new Date(),
                 isManual: true
             });
+            // Notify teacher dashboard to auto-refresh stats
+            const Class = require('../models/Class');
+            const classDoc = await Class.findById(session.class).select('classId').lean();
+            if (classDoc) {
+                io.to(`session:${sessionId}`).emit('dashboard-refresh', { classId: classDoc.classId });
+            }
         }
 
         res.json({ message: `Attendance ${status === 'Absent' ? 'removed' : 'marked as ' + status} (manual)`, status });

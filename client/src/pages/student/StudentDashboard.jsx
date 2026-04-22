@@ -3,14 +3,17 @@ import { useNavigate, NavLink } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 
 const StudentDashboard = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedClassId, setSelectedClassId] = useState('');
     const [focusClassId, setFocusClassId] = useState('');
+    const [liveToast, setLiveToast] = useState(null);
     const navigate = useNavigate();
     const { user } = useAuth();
+    const socket = useSocket();
 
     const quickNav = [
         { label: 'Dashboard', path: '/student/dashboard', icon: '📊' },
@@ -36,6 +39,17 @@ const StudentDashboard = () => {
         };
         fetchDashboard();
     }, []);
+
+    // Real-time: notify student when a session starts for any of their enrolled classes
+    useEffect(() => {
+        if (!socket) return;
+        const handleSessionStarted = (payload) => {
+            setLiveToast({ classId: payload.classId, subject: payload.subject });
+            setTimeout(() => setLiveToast(null), 8000);
+        };
+        socket.on('session-started', handleSessionStarted);
+        return () => socket.off('session-started', handleSessionStarted);
+    }, [socket]);
 
     if (loading) return (
         <div className="page-container">
@@ -331,6 +345,50 @@ const StudentDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Live Session Toast */}
+            {liveToast && (
+                <div style={{
+                    position: 'fixed', bottom: 28, right: 28, zIndex: 9999,
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    background: 'linear-gradient(135deg, #065f46, #064e3b)',
+                    border: '1px solid #10b981',
+                    borderRadius: 14, padding: '14px 20px',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                    maxWidth: 380, animation: 'slideUpToast 0.3s ease-out'
+                }}>
+                    <span style={{ fontSize: 24 }}>🎯</span>
+                    <div>
+                        <p style={{ color: '#f0fdf4', fontSize: 13, fontWeight: 700, margin: 0 }}>
+                            Live Session Started!
+                        </p>
+                        <p style={{ color: '#a7f3d0', fontSize: 11, margin: '2px 0 0' }}>
+                            {liveToast.subject} ({liveToast.classId})
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => { setLiveToast(null); navigate('/student/scan'); }}
+                        style={{
+                            background: '#10b981', border: 'none', borderRadius: 8,
+                            padding: '6px 12px', color: '#fff', fontSize: 11, fontWeight: 700,
+                            cursor: 'pointer', whiteSpace: 'nowrap'
+                        }}
+                    >
+                        Scan QR →
+                    </button>
+                    <button onClick={() => setLiveToast(null)} style={{
+                        background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%',
+                        width: 22, height: 22, cursor: 'pointer', color: '#fff',
+                        fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}>×</button>
+                </div>
+            )}
+            <style>{`
+                @keyframes slideUpToast {
+                    from { transform: translateY(20px); opacity: 0; }
+                    to   { transform: translateY(0);    opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 };
