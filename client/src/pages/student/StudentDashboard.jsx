@@ -11,6 +11,8 @@ const StudentDashboard = () => {
     const [selectedClassId, setSelectedClassId] = useState('');
     const [focusClassId, setFocusClassId] = useState('');
     const [liveToast, setLiveToast] = useState(null);
+    const [marksData, setMarksData] = useState(null);
+    const [marksLoading, setMarksLoading] = useState(false);
     const navigate = useNavigate();
     const { user } = useAuth();
     const socket = useSocket();
@@ -50,6 +52,32 @@ const StudentDashboard = () => {
         socket.on('session-started', handleSessionStarted);
         return () => socket.off('session-started', handleSessionStarted);
     }, [socket]);
+
+    // Derive selected class (safe even when data is null)
+    const selectedClass = data?.classes?.find((cls) => cls.classId === selectedClassId) || data?.classes?.[0] || null;
+
+    const fetchMarks = async (classId) => {
+        setMarksLoading(true);
+        try {
+            const res = await api.get(`/marks/student/${classId}`);
+            if (res.data.found) {
+                setMarksData(res.data);
+            } else {
+                setMarksData(null);
+            }
+        } catch (err) {
+            console.error('Failed to load marks:', err);
+            setMarksData(null);
+        } finally {
+            setMarksLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedClass && selectedClass._id) {
+            fetchMarks(selectedClass._id);
+        }
+    }, [selectedClass?._id]);
 
     if (loading) return (
         <div className="page-container">
@@ -137,33 +165,6 @@ const StudentDashboard = () => {
         { gradient: 'from-rose-500 to-pink-400', light: 'from-rose-50 to-pink-50', text: 'text-rose-600', shadow: 'shadow-rose-500/20' },
         { gradient: 'from-amber-500 to-orange-400', light: 'from-amber-50 to-orange-50', text: 'text-amber-600', shadow: 'shadow-amber-500/20' },
     ];
-
-    const selectedClass = data.classes.find((cls) => cls.classId === selectedClassId) || data.classes[0];
-    const [marksData, setMarksData] = useState(null);
-    const [marksLoading, setMarksLoading] = useState(false);
-
-    useEffect(() => {
-        if (selectedClass && selectedClass._id) {
-            fetchMarks(selectedClass._id);
-        }
-    }, [selectedClass?._id]);
-
-    const fetchMarks = async (classId) => {
-        setMarksLoading(true);
-        try {
-            const res = await api.get(`/marks/student/${classId}`);
-            if (res.data.found) {
-                setMarksData(res.data);
-            } else {
-                setMarksData(null);
-            }
-        } catch (err) {
-            console.error('Failed to load marks:', err);
-            setMarksData(null);
-        } finally {
-            setMarksLoading(false);
-        }
-    };
 
     const sortedClasses = [...data.classes].sort((a, b) => {
         if (a.classId === focusClassId) return -1;
