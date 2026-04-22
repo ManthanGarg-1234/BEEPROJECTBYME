@@ -6,6 +6,13 @@ const User = require('../models/User');
 const { auth, authorize } = require('../middleware/auth');
 const { calculateAttendancePercentage, getWarningLevel, evaluateClassAttendance } = require('../utils/evaluationEngine');
 const { sendWarningEmail } = require('../utils/emailService');
+const {
+    getComprehensiveStudentAnalytics,
+    getClassInsights,
+    calculateRiskAssessment,
+    calculateTemporalAnalysis,
+    generateRecommendation
+} = require('../utils/advancedAnalytics');
 
 const router = express.Router();
 
@@ -780,6 +787,172 @@ router.post('/send-bulk-warnings', auth, authorize('teacher'), async (req, res) 
         });
     } catch (error) {
         console.error('Bulk warning error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   ADVANCED ANALYTICS ENDPOINTS
+   ═══════════════════════════════════════════════════════════════════════════════════ */
+
+// @route   GET /api/analytics/advanced/student/:classId
+// @desc    Get comprehensive student analytics with trends, comparisons, and risk assessment
+// @access  Student (own classes) / Teacher (their classes)
+router.get('/advanced/student/:classId', auth, async (req, res) => {
+    try {
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() }).lean();
+        if (!classDoc) {
+            return res.status(404).json({ message: 'Class not found' });
+        }
+
+        // Determine if student or teacher is accessing
+        const isTeacher = req.user.role === 'teacher' && classDoc.teacher.toString() === req.user._id.toString();
+        const isStudent = req.user.role === 'student' && classDoc.students.some(s => s.toString() === req.user._id.toString());
+
+        if (!isTeacher && !isStudent) {
+            return res.status(403).json({ message: 'Access denied' });
+        }
+
+        const studentId = req.query.studentId || req.user._id;
+
+        // Verify access
+        if (!isTeacher && studentId !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Cannot view other students\' analytics' });
+        }
+
+        const analytics = await getComprehensiveStudentAnalytics(studentId, classDoc._id);
+        res.json(analytics);
+    } catch (error) {
+        console.error('Advanced student analytics error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/analytics/advanced/class/:classId
+// @desc    Get class-level insights and statistics
+// @access  Teacher (their classes)
+router.get('/advanced/class/:classId', auth, authorize('teacher'), async (req, res) => {
+    try {
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase(), teacher: req.user._id }).lean();
+        if (!classDoc) {
+            return res.status(404).json({ message: 'Class not found or access denied' });
+        }
+
+        const insights = await getClassInsights(classDoc._id);
+        res.json(insights);
+    } catch (error) {
+        console.error('Class insights error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/analytics/advanced/risk-assessment/:classId
+// @desc    Get risk assessment for all students in a class
+// @access  Teacher (their classes)
+router.get('/advanced/risk-assessment/:classId', auth, authorize('teacher'), async (req, res) => {
+    try {
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase(), teacher: req.user._id })
+            .populate('students', 'name email rollNumber');
+        if (!classDoc) {
+            return res.status(404).json({ message: 'Class not found or access denied' });
+        }
+
+        const sessions = await Session.find({ class: classDoc._id }).sort({ startTime: 1 }).lean();
+        if (sessions.length === 0) {
+            return res.json({ classId: classDoc.classId, students: [] });
+        }
+
+        const riskAssessments = [];
+
+        for (const student of classDoc.students) {
+            const risk = await calculateRiskAssessment(student._id, classDoc._id, sessions);
+            riskAssessments.push({
+                studentId: student._id,
+                name: student.name,
+                email: student.email,
+                rollNumber: student.rollNumber,
+                ...risk
+            });
+        }
+
+        // Sort by risk score (highest first)
+        riskAssessments.sort((a, b) => b.riskScore - a.riskScore);
+
+        res.json({
+            classId: classDoc.classId,
+            subject: classDoc.subject,
+            totalStudents: classDoc.students.length,
+            assessmentDate: new Date().toISOString(),
+            students: riskAssessments
+        });
+    } catch (error) {
+        console.error('Risk assessment error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/analytics/advanced/temporal/:classId
+// @desc    Get temporal analysis (day-of-week, monthly patterns) for a student
+// @access  Student / Teacher
+router.get('/advanced/temporal/:classId', auth, async (req, res) => {
+    try {
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase() }).lean();
+        if (!classDoc) {
+            return res.status(404).json({ message: 'Class not found' });
+        }
+
+        // Determine access
+        const isTeacher = req.user.role === 'teacher' && classDoc.teacher.toString() === req.user._id.toString();
+        const isStudent = req.user.role === 'student' && classDoc.students.some(s => s.toString() === req.user._id.toString());
+
+        if (!isTeacher && !isStudent) {
+            return res.status(403).json({ message: 'Access denied' });
+        }
+
+        const studentId = req.query.studentId || req.user._id;
+
+        // Verify access
+        if (!isTeacher && studentId !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Cannot view other students\' analytics' });
+        }
+
+        const temporal = await calculateTemporalAnalysis(studentId, classDoc._id);
+        res.json({
+            classId: classDoc.classId,
+            studentId,
+            temporal
+        });
+    } catch (error) {
+        console.error('Temporal analysis error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// @route   GET /api/analytics/advanced/class-risk-summary/:classId
+// @desc    Get summary of risk distribution in class
+// @access  Teacher (their classes)
+router.get('/advanced/class-risk-summary/:classId', auth, authorize('teacher'), async (req, res) => {
+    try {
+        const classDoc = await Class.findOne({ classId: req.params.classId.toUpperCase(), teacher: req.user._id }).lean();
+        if (!classDoc) {
+            return res.status(404).json({ message: 'Class not found or access denied' });
+        }
+
+        const insights = await getClassInsights(classDoc._id);
+        res.json({
+            classId: classDoc.classId,
+            subject: classDoc.subject,
+            riskDistribution: insights.riskDistribution,
+            avgAttendance: insights.avgAttendance,
+            healthScore: insights.healthScore,
+            totalStudents: insights.totalStudents,
+            criticalCount: insights.riskDistribution.critical,
+            recommendedAction: insights.riskDistribution.critical > 0
+                ? `${insights.riskDistribution.critical} student(s) need immediate attention`
+                : 'Class attendance is healthy'
+        });
+    } catch (error) {
+        console.error('Class risk summary error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

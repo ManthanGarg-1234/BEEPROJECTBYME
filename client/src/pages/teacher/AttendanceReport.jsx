@@ -4,6 +4,7 @@ import {
     PieChart, Pie, Cell, Legend,
     LineChart, Line, AreaChart, Area,
     RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+    ScatterChart, Scatter,
 } from 'recharts';
 import api from '../../api';
 
@@ -76,8 +77,9 @@ const AttendanceReport = () => {
 
     /* selector state */
     const [subCode, setSubCode]     = useState('');
-    const [mainTab, setMainTab]     = useState('overview');     // overview | daily | compare | heatmap
+    const [mainTab, setMainTab]     = useState('overview');     // overview | daily | compare | heatmap | advanced | risk
     const [selectedDate, setSelectedDate] = useState(null);
+    const [selectedClassForAdvanced, setSelectedClassForAdvanced] = useState('');
 
     /* data */
     const [overview,    setOverview]    = useState(null);   // group-overview
@@ -85,12 +87,15 @@ const AttendanceReport = () => {
     const [dayPies,      setDayPies]     = useState(null);  // group-day-pies
     const [heatmapData,  setHeatmapData] = useState(null);
     const [heatmapClass, setHeatmapClass] = useState('');
+    const [classInsights, setClassInsights] = useState(null);  // class-level insights
+    const [riskAssessments, setRiskAssessments] = useState(null);  // risk assessment data
 
     /* loading */
     const [loadingOv, setLoadingOv]       = useState(true);
     const [loadingSub, setLoadingSub]     = useState(false);
     const [loadingPies, setLoadingPies]   = useState(false);
     const [loadingHeat, setLoadingHeat]   = useState(false);
+    const [loadingAdvanced, setLoadingAdvanced] = useState(false);
 
     /* ── load teacher's own classes first, then derive subjects ──────────── */
     useEffect(() => {
@@ -163,6 +168,24 @@ const AttendanceReport = () => {
             .catch(console.error)
             .finally(() => setLoadingHeat(false));
     }, [mainTab, heatmapClass]);
+
+    /* ── fetch class insights and risk assessment ──────────────────────── */
+    useEffect(() => {
+        if (mainTab !== 'advanced' && mainTab !== 'risk') return;
+        if (!selectedClassForAdvanced) return;
+        
+        setLoadingAdvanced(true);
+        setClassInsights(null);
+        setRiskAssessments(null);
+
+        Promise.all([
+            api.get(`/analytics/advanced/class/${selectedClassForAdvanced}`).catch(() => null),
+            api.get(`/analytics/advanced/risk-assessment/${selectedClassForAdvanced}`).catch(() => null)
+        ]).then(([insightRes, riskRes]) => {
+            if (insightRes) setClassInsights(insightRes.data);
+            if (riskRes) setRiskAssessments(riskRes.data);
+        }).finally(() => setLoadingAdvanced(false));
+    }, [mainTab, selectedClassForAdvanced]);
 
     /* ── derived: overview matrix row for current subject ──────────────── */
     const subMatrix = useMemo(() => {
@@ -239,6 +262,8 @@ const AttendanceReport = () => {
                     { id: 'daily',    label: '📅 Daily Breakdown' },
                     { id: 'compare',  label: '🔀 Compare Groups' },
                     { id: 'heatmap',  label: '🌡 Heatmap' },
+                    { id: 'advanced', label: '🚀 Advanced Analytics' },
+                    { id: 'risk',     label: '⚠️ Risk Assessment' },
                 ].map(t => <TabBtn key={t.id} active={mainTab === t.id} onClick={() => setMainTab(t.id)}>{t.label}</TabBtn>)}
                 <button onClick={exportCSV}
                     className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold glass-card-solid text-slate-300 hover:text-white transition-all whitespace-nowrap">
@@ -674,6 +699,197 @@ const AttendanceReport = () => {
         );
     };
 
+    /* ════════════════════════════════════════════════════════════════════
+       ADVANCED ANALYTICS TAB
+    ════════════════════════════════════════════════════════════════════ */
+    const AdvancedTab = () => {
+        return (
+            <div className="space-y-6">
+                {/* Class selector */}
+                <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-sm text-slate-400 font-medium">Select class:</span>
+                    <div className="flex flex-wrap gap-2">
+                        {myClasses.map(cls => (
+                            <button key={cls.classId} onClick={() => setSelectedClassForAdvanced(cls.classId)}
+                                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all
+                                    ${selectedClassForAdvanced === cls.classId
+                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
+                                        : 'bg-slate-800/70 text-slate-300 hover:bg-slate-700 border border-slate-700/50'}`}>
+                                {cls.classId}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {loadingAdvanced ? <Skeleton h={300} /> : !classInsights ? (
+                    <NoData msg="No insights available. Select a class first." />
+                ) : (
+                    <div className="space-y-6">
+                        {/* Health Score Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="glass-card-solid p-4 rounded-xl">
+                                <div className="text-3xl font-bold" style={{ color: pctColor(classInsights.avgAttendance) }}>
+                                    {classInsights.avgAttendance}%
+                                </div>
+                                <p className="text-xs text-slate-400 mt-1">Class Average</p>
+                            </div>
+                            <div className="glass-card-solid p-4 rounded-xl">
+                                <div className="text-3xl font-bold text-blue-400">{classInsights.healthScore}</div>
+                                <p className="text-xs text-slate-400 mt-1">Health Score (0-100)</p>
+                            </div>
+                            <div className="glass-card-solid p-4 rounded-xl">
+                                <div className="text-3xl font-bold text-green-400">{classInsights.maxAttendance}%</div>
+                                <p className="text-xs text-slate-400 mt-1">Best Student</p>
+                            </div>
+                            <div className="glass-card-solid p-4 rounded-xl">
+                                <div className="text-3xl font-bold text-red-400">{classInsights.minAttendance}%</div>
+                                <p className="text-xs text-slate-400 mt-1">Lowest Student</p>
+                            </div>
+                        </div>
+
+                        {/* Risk Distribution */}
+                        <div className="glass-card-solid p-6 rounded-2xl">
+                            <h3 className="font-semibold text-slate-200 mb-4">🎯 Risk Distribution</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div className="p-3 rounded-lg border-l-4" style={{ borderColor: '#10b981', backgroundColor: '#10b981' }}>
+                                    <div className="text-2xl font-bold text-white">{classInsights.riskDistribution.low}</div>
+                                    <p className="text-xs text-white/80">Low Risk</p>
+                                </div>
+                                <div className="p-3 rounded-lg border-l-4" style={{ borderColor: '#f59e0b', backgroundColor: '#f59e0b' }}>
+                                    <div className="text-2xl font-bold text-white">{classInsights.riskDistribution.medium}</div>
+                                    <p className="text-xs text-white/80">Medium Risk</p>
+                                </div>
+                                <div className="p-3 rounded-lg border-l-4" style={{ borderColor: '#ff9800', backgroundColor: '#ff9800' }}>
+                                    <div className="text-2xl font-bold text-white">{classInsights.riskDistribution.high}</div>
+                                    <p className="text-xs text-white/80">High Risk</p>
+                                </div>
+                                <div className="p-3 rounded-lg border-l-4 border-red-600" style={{ backgroundColor: '#dc2626' }}>
+                                    <div className="text-2xl font-bold text-white">{classInsights.riskDistribution.critical}</div>
+                                    <p className="text-xs text-white/80">Critical</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Statistics */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="glass-card-solid p-4 rounded-xl">
+                                <p className="text-sm text-slate-400 mb-1">Standard Deviation</p>
+                                <p className="text-2xl font-bold">{classInsights.standardDeviation}%</p>
+                                <p className="text-xs text-slate-500 mt-2">(Lower = more consistent)</p>
+                            </div>
+                            <div className="glass-card-solid p-4 rounded-xl">
+                                <p className="text-sm text-slate-400 mb-1">Total Sessions</p>
+                                <p className="text-2xl font-bold">{classInsights.totalSessions}</p>
+                                <p className="text-xs text-slate-500 mt-2">Across {classInsights.totalStudents} students</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    /* ════════════════════════════════════════════════════════════════════
+       RISK ASSESSMENT TAB
+    ════════════════════════════════════════════════════════════════════ */
+    const RiskTab = () => {
+        return (
+            <div className="space-y-6">
+                {/* Class selector */}
+                <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-sm text-slate-400 font-medium">Select class:</span>
+                    <div className="flex flex-wrap gap-2">
+                        {myClasses.map(cls => (
+                            <button key={cls.classId} onClick={() => setSelectedClassForAdvanced(cls.classId)}
+                                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all
+                                    ${selectedClassForAdvanced === cls.classId
+                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
+                                        : 'bg-slate-800/70 text-slate-300 hover:bg-slate-700 border border-slate-700/50'}`}>
+                                {cls.classId}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {loadingAdvanced ? <Skeleton h={300} /> : !riskAssessments || !riskAssessments.students?.length ? (
+                    <NoData msg="No risk data available. Select a class first." />
+                ) : (
+                    <div className="space-y-4">
+                        {/* Risk Summary */}
+                        <div className="glass-card-solid p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                            <p className="text-sm text-blue-300">{riskAssessments.recommendedAction}</p>
+                        </div>
+
+                        {/* Risk Table */}
+                        <div className="glass-card-solid p-4 rounded-2xl overflow-x-auto">
+                            <table className="w-full text-sm min-w-full">
+                                <thead>
+                                    <tr className="border-b border-slate-700">
+                                        <th className="text-left py-3 px-4 text-slate-400 font-medium">Student</th>
+                                        <th className="text-center py-3 px-4 text-slate-400 font-medium">Risk Level</th>
+                                        <th className="text-center py-3 px-4 text-slate-400 font-medium">Current %</th>
+                                        <th className="text-center py-3 px-4 text-slate-400 font-medium">Trend</th>
+                                        <th className="text-center py-3 px-4 text-slate-400 font-medium">Predicted %</th>
+                                        <th className="text-center py-3 px-4 text-slate-400 font-medium">Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {riskAssessments.students.map((student, idx) => {
+                                        let riskColor = '#10b981';
+                                        let riskLabel = 'Low';
+                                        if (student.riskLevel === 'medium') { riskColor = '#f59e0b'; riskLabel = 'Medium'; }
+                                        else if (student.riskLevel === 'high') { riskColor = '#ff9800'; riskLabel = 'High'; }
+                                        else if (student.riskLevel === 'critical') { riskColor = '#dc2626'; riskLabel = 'Critical'; }
+
+                                        return (
+                                            <tr key={idx} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                                                <td className="py-3 px-4">
+                                                    <div>
+                                                        <p className="font-semibold text-slate-200">{student.name}</p>
+                                                        <p className="text-xs text-slate-500">{student.rollNumber}</p>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-4 text-center">
+                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold text-white"
+                                                        style={{ backgroundColor: riskColor }}>
+                                                        {riskLabel}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4 text-center">
+                                                    <span className="font-semibold" style={{ color: pctColor(student.recentPercentage) }}>
+                                                        {student.recentPercentage}%
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4 text-center">
+                                                    {student.isDropping ? (
+                                                        <span className="text-red-400 text-sm font-bold">📉 {student.attendanceDrop.toFixed(1)}%</span>
+                                                    ) : (
+                                                        <span className="text-green-400 text-sm font-bold">📈 Stable</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-3 px-4 text-center">
+                                                    <span className="font-semibold" style={{ color: pctColor(student.predictedEndOfSemesterPercentage) }}>
+                                                        {student.predictedEndOfSemesterPercentage}%
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-4 text-center">
+                                                    <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
+                                                        style={{ backgroundColor: `${riskColor}20`, border: `2px solid ${riskColor}` }}>
+                                                        <span className="font-bold" style={{ color: riskColor }}>{student.riskScore}</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     /* ── current subject info ────────────────────────────────────────────── */
     const curSub = ALL_SUBJECTS.find(s => s.code === subCode) || mySubjects.find(s => s.code === subCode);
 
@@ -715,6 +931,8 @@ const AttendanceReport = () => {
             {mainTab === 'daily'    && <DailyTab />}
             {mainTab === 'compare'  && <CompareTab />}
             {mainTab === 'heatmap'  && <HeatmapTab />}
+            {mainTab === 'advanced' && <AdvancedTab />}
+            {mainTab === 'risk'     && <RiskTab />}
         </div>
     );
 };
