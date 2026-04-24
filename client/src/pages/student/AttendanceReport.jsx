@@ -313,25 +313,6 @@ const PersonalTab = ({ summary, total, pct, pieData, trendData, sortedRecords })
                     <p className="text-xs text-slate-400 mt-1">{total} total sessions</p>
                 </div>
 
-                {/* Pie chart */}
-                <div className="glass-card-solid p-5">
-                    <h3 className="text-sm font-semibold text-slate-300 mb-2">Status Distribution</h3>
-                    <div className="h-52">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie data={pieData} dataKey="value" nameKey="name"
-                                    outerRadius={75} innerRadius={40} paddingAngle={3}>
-                                    {pieData.map(entry => (
-                                        <Cell key={entry.name} fill={STATUS_COLORS[entry.name]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 8, color: '#e2e8f0' }} />
-                                <Legend iconType="circle" iconSize={10}
-                                    formatter={(v) => <span style={{ color: '#94a3b8', fontSize: 12 }}>{v}</span>} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
             </div>
 
             {/* Bar chart — sessions by status */}
@@ -487,44 +468,21 @@ const GroupTab = ({ groupDaily, selectedClass }) => {
                 <StatCard label="Group Avg %" value={`${avgPct}%`} color="#6366f1" icon="📊" />
             </div>
 
-            {/* Group pie chart */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="glass-card-solid p-5">
-                    <h3 className="text-sm font-semibold text-slate-300 mb-2">Overall Group Distribution</h3>
-                    <div className="h-52">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie data={[
-                                    { name: 'Present', value: totalPresent },
-                                    { name: 'Late', value: totalLate },
-                                    { name: 'Absent', value: totalAbsent },
-                                ]} dataKey="value" outerRadius={75} innerRadius={40} paddingAngle={3}>
-                                    {['#10b981', '#f59e0b', '#ef4444'].map((c, i) => <Cell key={i} fill={c} />)}
-                                </Pie>
-                                <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: 8, color: '#e2e8f0' }} />
-                                <Legend iconType="circle" iconSize={10}
-                                    formatter={(v) => <span style={{ color: '#94a3b8', fontSize: 12 }}>{v}</span>} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Group avg % over time */}
-                <div className="glass-card-solid p-5">
-                    <h3 className="text-sm font-semibold text-slate-300 mb-2">Group Attendance % Trend</h3>
-                    <div className="h-52">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={groupDaily}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                                <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 10 }} interval="preserveStartEnd" axisLine={false} tickLine={false} />
-                                <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
-                                <Tooltip formatter={(v) => [`${v}%`, 'Group Attendance']}
-                                    contentStyle={{ background: '#1e293b', border: '1px solid #22d3ee', borderRadius: 8, color: '#e2e8f0' }} />
-                                <Line type="monotone" dataKey="percentage" stroke="#22d3ee" strokeWidth={2.5}
-                                    dot={{ r: 3, fill: '#22d3ee' }} activeDot={{ r: 6 }} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
+            {/* Group avg % over time */}
+            <div className="glass-card-solid p-5">
+                <h3 className="text-sm font-semibold text-slate-300 mb-2">Group Attendance % Trend</h3>
+                <div className="h-52">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={groupDaily}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                            <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 10 }} interval="preserveStartEnd" axisLine={false} tickLine={false} />
+                            <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
+                            <Tooltip formatter={(v) => [`${v}%`, 'Group Attendance']}
+                                contentStyle={{ background: '#1e293b', border: '1px solid #22d3ee', borderRadius: 8, color: '#e2e8f0' }} />
+                            <Line type="monotone" dataKey="percentage" stroke="#22d3ee" strokeWidth={2.5}
+                                dot={{ r: 3, fill: '#22d3ee' }} activeDot={{ r: 6 }} />
+                        </LineChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
 
