@@ -1,12 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    PieChart, Pie, Cell, Legend,
-    LineChart, Line, AreaChart, Area,
-    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-    ScatterChart, Scatter,
+    LineChart, Line, AreaChart, Area, ReferenceLine,
 } from 'recharts';
 import api from '../../api';
+import { generateTeacherInsights } from '../../utils/insightGenerator';
 
 /* ─── constants ──────────────────────────────────────────────────────────── */
 // Groups, subjects, and colors are now derived dynamically from the API response.
@@ -39,24 +37,7 @@ const TabBtn = ({ active, onClick, children }) => (
     </button>
 );
 
-/* ─── Donut mini-chart ───────────────────────────────────────────────────── */
-const MiniDoughnut = ({ present, late, absent }) => {
-    const data = [
-        { name: 'Present', value: present },
-        { name: 'Late',    value: late },
-        { name: 'Absent',  value: absent },
-    ];
-    return (
-        <ResponsiveContainer width="100%" height={160}>
-            <PieChart>
-                <Pie data={data} dataKey="value" innerRadius={42} outerRadius={62} paddingAngle={2}>
-                    {data.map(e => <Cell key={e.name} fill={STATUS_COLORS[e.name]} />)}
-                </Pie>
-                <Tooltip {...TP} formatter={(v, n) => [v, n]} />
-            </PieChart>
-        </ResponsiveContainer>
-    );
-};
+
 
 /* ════════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -76,26 +57,19 @@ const AttendanceReport = () => {
     [GROUPS]);
 
     /* selector state */
-    const [subCode, setSubCode]     = useState('');
-    const [mainTab, setMainTab]     = useState('overview');     // overview | daily | compare | heatmap | advanced | risk
-    const [selectedDate, setSelectedDate] = useState(null);
-    const [selectedClassForAdvanced, setSelectedClassForAdvanced] = useState('');
+    const [subCode, setSubCode] = useState('');
+    const [mainTab, setMainTab] = useState('overview'); // overview | timeline | heatmap
+    const [heatmapClass, setHeatmapClass] = useState('');
 
     /* data */
-    const [overview,    setOverview]    = useState(null);   // group-overview
-    const [subjectDaily, setSubjectDaily] = useState(null); // group-subject-daily
-    const [dayPies,      setDayPies]     = useState(null);  // group-day-pies
-    const [heatmapData,  setHeatmapData] = useState(null);
-    const [heatmapClass, setHeatmapClass] = useState('');
-    const [classInsights, setClassInsights] = useState(null);  // class-level insights
-    const [riskAssessments, setRiskAssessments] = useState(null);  // risk assessment data
+    const [overview, setOverview] = useState(null);
+    const [subjectDaily, setSubjectDaily] = useState(null);
+    const [heatmapData, setHeatmapData] = useState(null);
 
     /* loading */
-    const [loadingOv, setLoadingOv]       = useState(true);
-    const [loadingSub, setLoadingSub]     = useState(false);
-    const [loadingPies, setLoadingPies]   = useState(false);
-    const [loadingHeat, setLoadingHeat]   = useState(false);
-    const [loadingAdvanced, setLoadingAdvanced] = useState(false);
+    const [loadingOv, setLoadingOv] = useState(true);
+    const [loadingSub, setLoadingSub] = useState(false);
+    const [loadingHeat, setLoadingHeat] = useState(false);
 
     /* ── load teacher's own classes first, then derive subjects ──────────── */
     useEffect(() => {
@@ -140,23 +114,11 @@ const AttendanceReport = () => {
         if (!subCode) return;
         setLoadingSub(true);
         setSubjectDaily(null);
-        setSelectedDate(null);
-        setDayPies(null);
         api.get(`/analytics/group-subject-daily/${subCode}`)
             .then(r => { setSubjectDaily(r.data); })
             .catch(console.error)
             .finally(() => setLoadingSub(false));
     }, [subCode]);
-
-    /* ── fetch day-pies when selectedDate changes ───────────────────────── */
-    useEffect(() => {
-        if (!selectedDate || !subCode) return;
-        setLoadingPies(true);
-        api.get(`/analytics/group-day-pies/${subCode}/${selectedDate}`)
-            .then(r => setDayPies(r.data))
-            .catch(console.error)
-            .finally(() => setLoadingPies(false));
-    }, [selectedDate, subCode]);
 
     /* ── fetch heatmap ──────────────────────────────────────────────────── */
     useEffect(() => {
@@ -169,23 +131,7 @@ const AttendanceReport = () => {
             .finally(() => setLoadingHeat(false));
     }, [mainTab, heatmapClass]);
 
-    /* ── fetch class insights and risk assessment ──────────────────────── */
-    useEffect(() => {
-        if (mainTab !== 'advanced' && mainTab !== 'risk') return;
-        if (!selectedClassForAdvanced) return;
-        
-        setLoadingAdvanced(true);
-        setClassInsights(null);
-        setRiskAssessments(null);
 
-        Promise.all([
-            api.get(`/analytics/advanced/class/${selectedClassForAdvanced}`).catch(() => null),
-            api.get(`/analytics/advanced/risk-assessment/${selectedClassForAdvanced}`).catch(() => null)
-        ]).then(([insightRes, riskRes]) => {
-            if (insightRes) setClassInsights(insightRes.data);
-            if (riskRes) setRiskAssessments(riskRes.data);
-        }).finally(() => setLoadingAdvanced(false));
-    }, [mainTab, selectedClassForAdvanced]);
 
     /* ── derived: overview matrix row for current subject ──────────────── */
     const subMatrix = useMemo(() => {
@@ -213,14 +159,52 @@ const AttendanceReport = () => {
             (subjectDaily.daily?.[g] || []).forEach(d => {
                 if (!map[d.date]) map[d.date] = { date: d.date };
                 map[d.date][`${g}_pct`] = d.pct;
-                map[d.date][`${g}_present`] = d.present;
             });
         });
         return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
     }, [subjectDaily]);
 
-    /* ── dates list ─────────────────────────────────────────────────────── */
-    const allDates = useMemo(() => subjectDaily?.dates || [], [subjectDaily]);
+    /* ── derived: stats for overview tab ──────────────────────────────── */
+    const overviewStats = useMemo(() => {
+        if (!subMatrix || !overview) return null;
+
+        const totals = GROUPS.reduce((a, g) => {
+            const d = subMatrix[g];
+            if (!d) return a;
+            a.present += d.present;
+            a.late += d.late;
+            a.absent += d.absent;
+            a.total += d.total;
+            a.totalStudents += d.totalStudents || 0;
+            a.totalSessions += d.totalSessions || 0;
+            return a;
+        }, { present: 0, late: 0, absent: 0, total: 0, totalStudents: 0, totalSessions: 0 });
+
+        const avgPct = totals.total > 0 ? Math.round(((totals.present + totals.late) / totals.total) * 1000) / 10 : 0;
+        const atRiskCount = compareData.filter(d => d.pct < 75).length;
+
+        return {
+            totalStudents: totals.totalStudents,
+            avgAttendance: avgPct,
+            totalSessions: totals.totalSessions,
+            atRiskCount,
+            bestGroup: compareData.reduce((max, curr) => (curr.pct > max.pct ? curr : max), compareData[0]),
+            worstGroup: compareData.reduce((min, curr) => (curr.pct < min.pct ? curr : min), compareData[0]),
+            lastSessionPct: mergedDaily.length > 0 ? mergedDaily[mergedDaily.length - 1][`${GROUPS[0]}_pct`] || 0 : 0,
+        };
+    }, [subMatrix, overview, compareData, mergedDaily]);
+
+    /* ── calculate risk distribution ────────────────────────────────── */
+    const riskDistribution = useMemo(() => {
+        if (!compareData.length) return { low: 0, medium: 0, high: 0, critical: 0 };
+        return compareData.reduce((acc, g) => {
+            if (g.pct >= 80) acc.low++;
+            else if (g.pct >= 75) acc.medium++;
+            else if (g.pct >= 65) acc.high++;
+            else acc.critical++;
+            return acc;
+        }, { low: 0, medium: 0, high: 0, critical: 0 });
+    }, [compareData]);
 
     /* ── export CSV ─────────────────────────────────────────────────────── */
     const exportCSV = async () => {
@@ -258,12 +242,9 @@ const AttendanceReport = () => {
         <div className="overflow-x-auto pb-1 -mx-1 px-1 mb-6">
             <div className="flex gap-2 min-w-max">
                 {[
-                    { id: 'overview', label: '📊 Overview' },
-                    { id: 'daily',    label: '📅 Daily Breakdown' },
-                    { id: 'compare',  label: '🔀 Compare Groups' },
-                    { id: 'heatmap',  label: '🌡 Heatmap' },
-                    { id: 'advanced', label: '🚀 Advanced Analytics' },
-                    { id: 'risk',     label: '⚠️ Risk Assessment' },
+                    { id: 'overview', label: '📊 Class Overview' },
+                    { id: 'timeline', label: '📅 Session Timeline' },
+                    { id: 'heatmap', label: '🌡 Student Heatmap' },
                 ].map(t => <TabBtn key={t.id} active={mainTab === t.id} onClick={() => setMainTab(t.id)}>{t.label}</TabBtn>)}
                 <button onClick={exportCSV}
                     className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold glass-card-solid text-slate-300 hover:text-white transition-all whitespace-nowrap">
@@ -274,335 +255,259 @@ const AttendanceReport = () => {
     );
 
     /* ════════════════════════════════════════════════════════════════════
-       OVERVIEW TAB
+       CLASS OVERVIEW TAB
     ════════════════════════════════════════════════════════════════════ */
     const OverviewTab = () => {
-        if (loadingOv) return <Skeleton />;
-        if (!subMatrix || !overview) return <NoData msg="No data available." />;
+        if (loadingOv || loadingSub) return <Skeleton />;
+        if (!subMatrix || !overview || !overviewStats) return <NoData msg="No data available." />;
 
-        const totals = GROUPS.reduce((a, g) => {
-            const d = subMatrix[g];
-            if (!d) return a;
-            a.present += d.present; a.late += d.late; a.absent += d.absent; a.total += d.total;
-            return a;
-        }, { present: 0, late: 0, absent: 0, total: 0 });
-        const overallPct = totals.total > 0 ? Math.round(((totals.present + totals.late) / totals.total) * 1000) / 10 : 0;
+        const insights = generateTeacherInsights(overviewStats, mergedDaily);
 
         return (
             <div className="space-y-6">
-                {/* Overall stat cards */}
+                {/* 4 Smart Stat Cards */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <StatCard label="Total Present"  value={totals.present}   color="#10b981" icon="✅" />
-                    <StatCard label="Total Late"     value={totals.late}      color="#f59e0b" icon="⏰" />
-                    <StatCard label="Total Absent"   value={totals.absent}    color="#ef4444" icon="❌" />
-                    <StatCard label="Overall Att. %" value={`${overallPct}%`} color={pctColor(overallPct)} icon="📊" />
+                    <StatCard 
+                        label="Total Students" 
+                        value={overviewStats.totalStudents} 
+                        color="#6366f1" 
+                        icon="👥" 
+                    />
+                    <StatCard 
+                        label="Avg Attendance %" 
+                        value={`${overviewStats.avgAttendance}%`} 
+                        color={pctColor(overviewStats.avgAttendance)} 
+                        icon="📈" 
+                    />
+                    <StatCard 
+                        label="Sessions Conducted" 
+                        value={overviewStats.totalSessions} 
+                        color="#10b981" 
+                        icon="📅" 
+                    />
+                    <StatCard 
+                        label="At-Risk Students" 
+                        value={overviewStats.atRiskCount} 
+                        color={overviewStats.atRiskCount > 0 ? '#f59e0b' : '#10b981'} 
+                        icon="⚠️" 
+                    />
                 </div>
 
-                {/* Per-group cards with mini pie */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
-                    {GROUPS.map(g => {
-                        const d = subMatrix[g];
-                        if (!d) return null;
-                        const p = d.pct;
-                        return (
-                            <div key={g} className="glass-card-solid p-3 sm:p-4 rounded-2xl border border-slate-700/50">
-                                <div className="flex items-center justify-between mb-1">
-                                    <span className="font-extrabold text-base sm:text-lg" style={{ color: GROUP_COLORS[g] }}>{g}</span>
-                                    <span className="text-xs px-2 py-0.5 rounded-full text-white font-bold"
-                                        style={{ background: pctColor(p) }}>{p}%</span>
-                                </div>
-                                <p className="text-xs text-slate-400 mb-2 sm:mb-3">{d.totalStudents} students · {d.totalSessions} sessions</p>
-                                <MiniDoughnut present={d.present} late={d.late} absent={d.absent} />
-                                <div className="flex justify-around text-xs mt-2">
-                                    <span className="text-emerald-400 font-bold">{d.present} P</span>
-                                    <span className="text-amber-400 font-bold">{d.late} L</span>
-                                    <span className="text-rose-400 font-bold">{d.absent} A</span>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                {/* Auto-Generated Insight Box */}
+                {insights.length > 0 && (
+                    <div className="glass-card-solid p-5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5">
+                        <h3 className="text-sm font-semibold text-indigo-300 mb-3">💡 Key Insights</h3>
+                        <div className="space-y-2">
+                            {insights.map((insight, i) => (
+                                <p key={i} className="text-sm text-slate-300 leading-relaxed">
+                                    • {insight}
+                                </p>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
-                {/* Multi-group bar: attendance % comparison */}
+                {/* Large Bar Chart - Attendance % per Group */}
                 <div className="glass-card-solid p-6 rounded-2xl">
                     <h3 className="text-sm font-semibold text-slate-300 mb-4">📊 Group Attendance % Comparison</h3>
-                    <div className="h-64">
+                    <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={compareData} margin={{ left: 0, right: 8 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                                 <XAxis dataKey="group" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
                                 <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
+                                <ReferenceLine y={75} stroke="#ef4444" strokeDasharray="5 5" label={{ value: '75% Threshold', position: 'right', fill: '#ef4444', fontSize: 11 }} />
                                 <Tooltip {...TP} formatter={(v) => [`${v}%`, 'Attendance']} />
                                 <Bar dataKey="pct" radius={[6, 6, 0, 0]} name="Attendance %">
-                                    {compareData.map(e => <Cell key={e.group} fill={GROUP_COLORS[e.group]} />)}
+                                    {compareData.map(e => (
+                                        <Bar key={e.group} dataKey="pct" fill={GROUP_COLORS[e.group]} />
+                                    ))}
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Stacked present/late/absent per group */}
+                {/* Student Performance Table */}
                 <div className="glass-card-solid p-6 rounded-2xl">
-                    <h3 className="text-sm font-semibold text-slate-300 mb-4">📦 Present / Late / Absent per Group (total slots)</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={compareData} margin={{ left: 0, right: 8 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                                <XAxis dataKey="group" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                                <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                <Tooltip {...TP} />
-                                <Legend iconType="circle" iconSize={9}
-                                    formatter={v => <span style={{ color: '#94a3b8', fontSize: 11 }}>{v}</span>} />
-                                <Bar dataKey="present" stackId="a" fill="#10b981" name="Present" />
-                                <Bar dataKey="late"    stackId="a" fill="#f59e0b" name="Late" />
-                                <Bar dataKey="absent"  stackId="a" fill="#ef4444" name="Absent" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Radar chart — group comparison */}
-                <div className="glass-card-solid p-6 rounded-2xl">
-                    <h3 className="text-sm font-semibold text-slate-300 mb-4">🕸 Radar — Group Attendance Profile</h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart data={compareData}>
-                                <PolarGrid stroke="#1e293b" />
-                                <PolarAngleAxis dataKey="group" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#475569', fontSize: 10 }} />
-                                <Radar name="Attendance %" dataKey="pct" stroke="#6366f1" fill="#6366f1" fillOpacity={0.35} />
-                                <Tooltip {...TP} formatter={v => [`${v}%`]} />
-                                <Legend iconType="circle" iconSize={9}
-                                    formatter={v => <span style={{ color: '#94a3b8', fontSize: 11 }}>{v}</span>} />
-                            </RadarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    /* ════════════════════════════════════════════════════════════════════
-       DAILY BREAKDOWN TAB
-    ════════════════════════════════════════════════════════════════════ */
-    const DailyTab = () => {
-        if (loadingSub) return <Skeleton />;
-        if (!subjectDaily || !mergedDaily.length) return <NoData msg="No daily data." />;
-
-        const firstGroup = subjectDaily.daily?.[GROUPS[0]] || [];
-
-        return (
-            <div className="space-y-6">
-                {/* Line chart: all groups pct over time */}
-                <div className="glass-card-solid p-6 rounded-2xl">
-                    <h3 className="text-sm font-semibold text-slate-300 mb-4">📈 Daily Attendance % — All Groups</h3>
-                    <div className="h-72">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={mergedDaily} margin={{ left: 0, right: 8 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                                <XAxis dataKey="date" tickFormatter={fmt} tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                                <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
-                                <Tooltip {...TP} labelFormatter={fmt} formatter={(v) => [`${v}%`]} />
-                                <Legend iconType="circle" iconSize={9}
-                                    formatter={v => <span style={{ color: '#94a3b8', fontSize: 11 }}>{v.replace('_pct', '')}</span>} />
-                                {GROUPS.map(g => (
-                                    <Line key={g} type="monotone" dataKey={`${g}_pct`} stroke={GROUP_COLORS[g]}
-                                        strokeWidth={2} dot={false} activeDot={{ r: 5 }} name={`${g}_pct`} />
-                                ))}
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Date picker — click a date to see per-group pie charts */}
-                <div className="glass-card-solid p-5 rounded-2xl">
-                    <h3 className="text-sm font-semibold text-slate-300 mb-3">🗓 Select a Day for Per-Group Pie Breakdown</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {allDates.map(d => (
-                            <button key={d} onClick={() => setSelectedDate(selectedDate === d ? null : d)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150
-                                    ${selectedDate === d
-                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow'
-                                        : 'bg-slate-800/70 text-slate-300 hover:bg-slate-700/70 border border-slate-700/50'}`}>
-                                {fmt(d)}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Per-day per-group pie charts */}
-                {selectedDate && (
-                    <div className="glass-card-solid p-6 rounded-2xl">
-                        <h3 className="text-sm font-semibold text-slate-300 mb-4">
-                            🍕 Pie Charts per Group — {fmt(selectedDate)}
-                        </h3>
-                        {loadingPies ? <Skeleton h={180} /> : (
-                            dayPies?.pies ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                                    {GROUPS.map(g => {
-                                        const d = dayPies.pies[g];
-                                        if (!d) return (
-                                            <div key={g} className="flex flex-col items-center p-3 rounded-xl bg-slate-800/40 border border-slate-700/40">
-                                                <span className="font-bold mb-2" style={{ color: GROUP_COLORS[g] }}>{g}</span>
-                                                <p className="text-xs text-slate-500">No session</p>
-                                            </div>
-                                        );
-                                        return (
-                                            <div key={g} className="flex flex-col items-center p-3 rounded-xl bg-slate-800/40 border border-slate-700/40">
-                                                <div className="flex items-center justify-between w-full mb-1">
-                                                    <span className="font-bold text-sm" style={{ color: GROUP_COLORS[g] }}>{g}</span>
-                                                    <span className="text-xs font-bold" style={{ color: pctColor(d.pct) }}>{d.pct}%</span>
-                                                </div>
-                                                <MiniDoughnut present={d.present} late={d.late} absent={d.absent} />
-                                                <div className="flex justify-around w-full text-[10px] mt-1">
-                                                    <span className="text-emerald-400 font-bold">{d.present}P</span>
-                                                    <span className="text-amber-400 font-bold">{d.late}L</span>
-                                                    <span className="text-rose-400 font-bold">{d.absent}A</span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : <NoData msg="No pie data." />
-                        )}
-                    </div>
-                )}
-
-                {/* Stacked bar per group per day (G18 shown as default) */}
-                {GROUPS.map(g => {
-                    const gData = subjectDaily.daily?.[g] || [];
-                    if (!gData.length) return null;
-                    return (
-                        <div key={g} className="glass-card-solid p-5 rounded-2xl">
-                            <h3 className="text-sm font-semibold mb-4" style={{ color: GROUP_COLORS[g] }}>
-                                📅 {g} — Day-by-Day Attendance
-                            </h3>
-                            <div className="h-52">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={gData} margin={{ left: 0, right: 4 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                                        <XAxis dataKey="date" tickFormatter={fmt} tick={{ fill: '#94a3b8', fontSize: 9 }}
-                                            axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                                        <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                        <Tooltip {...TP} labelFormatter={fmt} />
-                                        <Bar dataKey="present" stackId="a" fill="#10b981" name="Present" />
-                                        <Bar dataKey="late"    stackId="a" fill="#f59e0b" name="Late" />
-                                        <Bar dataKey="absent"  stackId="a" fill="#ef4444" name="Absent" radius={[4, 4, 0, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        );
-    };
-
-    /* ════════════════════════════════════════════════════════════════════
-       COMPARE GROUPS TAB
-    ════════════════════════════════════════════════════════════════════ */
-    const CompareTab = () => {
-        if (loadingOv || loadingSub) return <Skeleton />;
-        if (!subMatrix) return <NoData msg="No data." />;
-
-        // Area chart: all subjects comparison (all GROUPS for current subject shown)
-        // Also show cross-subject summary for each group (using overview matrix)
-        const crossSubjectData = GROUPS.map(g => {
-            const row = { group: g };
-            ALL_SUBJECTS.forEach(s => {
-                row[s.name] = overview?.matrix?.[s.code]?.[g]?.pct ?? 0;
-            });
-            return row;
-        });
-
-        return (
-            <div className="space-y-6">
-                {/* Grouped bar: all subjects attendance % for each group */}
-                <div className="glass-card-solid p-6 rounded-2xl">
-                    <h3 className="text-sm font-semibold text-slate-300 mb-4">📊 All Subjects Attendance % by Group</h3>
-                    <div className="h-72">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={crossSubjectData} margin={{ left: 0, right: 8 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                                <XAxis dataKey="group" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                                <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
-                                <Tooltip {...TP} formatter={(v) => [`${v}%`]} />
-                                <Legend iconType="circle" iconSize={9}
-                                    formatter={v => <span style={{ color: '#94a3b8', fontSize: 10 }}>{v}</span>} />
-                                {ALL_SUBJECTS.map((s, i) => (
-                                    <Bar key={s.code} dataKey={s.name} radius={[4, 4, 0, 0]}
-                                        fill={['#6366f1','#22d3ee','#10b981','#f59e0b','#f43f5e'][i]} />
-                                ))}
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Area chart overtime for current subject per group */}
-                {mergedDaily.length > 0 && (
-                    <div className="glass-card-solid p-6 rounded-2xl">
-                        <h3 className="text-sm font-semibold text-slate-300 mb-4">
-                            📈 {ALL_SUBJECTS.find(s => s.code === subCode)?.name} — Attendance % Trends per Group
-                        </h3>
-                        <div className="h-72">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={mergedDaily} margin={{ left: 0, right: 8 }}>
-                                    <defs>
-                                        {GROUPS.map(g => (
-                                            <linearGradient key={g} id={`grad_${g}`} x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%"  stopColor={GROUP_COLORS[g]} stopOpacity={0.35} />
-                                                <stop offset="95%" stopColor={GROUP_COLORS[g]} stopOpacity={0.03} />
-                                            </linearGradient>
-                                        ))}
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                                    <XAxis dataKey="date" tickFormatter={fmt} tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                                    <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
-                                    <Tooltip {...TP} labelFormatter={fmt} formatter={(v) => [`${v}%`]} />
-                                    <Legend iconType="circle" iconSize={9}
-                                        formatter={v => <span style={{ color: '#94a3b8', fontSize: 11 }}>{v.replace('_pct', '')}</span>} />
-                                    {GROUPS.map(g => (
-                                        <Area key={g} type="monotone" dataKey={`${g}_pct`}
-                                            stroke={GROUP_COLORS[g]} fill={`url(#grad_${g})`}
-                                            strokeWidth={2} dot={false} name={`${g}_pct`} />
-                                    ))}
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                )}
-
-                {/* Table: cross-subject summary */}
-                <div className="glass-card-solid p-5 sm:p-6 rounded-2xl">
-                    <h3 className="text-sm font-semibold text-slate-300 mb-4">📋 Attendance % Matrix — Group × Subject</h3>
-                    <div className="overflow-x-auto rounded-xl -mx-1">
-                        <table className="w-full text-sm min-w-[400px]">
+                    <h3 className="text-sm font-semibold text-slate-300 mb-4">👥 Group Performance</h3>
+                    <div className="overflow-x-auto rounded-xl">
+                        <table className="w-full text-sm min-w-[500px]">
                             <thead>
                                 <tr className="bg-slate-800/60">
-                                    <th className="text-left py-3 px-3 sm:px-4 text-slate-400 font-medium sticky left-0 bg-slate-800/60 z-10 min-w-[70px]">Group</th>
-                                    {ALL_SUBJECTS.map(s => (
-                                        <th key={s.code} className="text-center py-3 px-2 sm:px-3 text-slate-400 font-medium whitespace-nowrap">{s.icon} {s.code}</th>
-                                    ))}
+                                    <th className="text-left py-3 px-4 text-slate-400 font-medium">Group</th>
+                                    <th className="text-center py-3 px-4 text-slate-400 font-medium">Students</th>
+                                    <th className="text-center py-3 px-4 text-slate-400 font-medium">Attendance %</th>
+                                    <th className="text-center py-3 px-4 text-slate-400 font-medium">Status</th>
+                                    <th className="text-center py-3 px-4 text-slate-400 font-medium">Present</th>
+                                    <th className="text-center py-3 px-4 text-slate-400 font-medium">Late</th>
+                                    <th className="text-center py-3 px-4 text-slate-400 font-medium">Absent</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {GROUPS.map(g => (
-                                    <tr key={g} className="border-t border-slate-800/50 hover:bg-slate-800/30 transition-colors">
-                                        <td className="py-3 px-3 sm:px-4 font-extrabold sticky left-0 bg-slate-900/80 z-10" style={{ color: GROUP_COLORS[g] }}>{g}</td>
-                                        {ALL_SUBJECTS.map(s => {
-                                            const p = overview?.matrix?.[s.code]?.[g]?.pct ?? null;
-                                            return (
-                                                <td key={s.code} className="py-3 px-2 sm:px-3 text-center">
-                                                    {p !== null
-                                                        ? <span className="font-bold" style={{ color: pctColor(p) }}>{p}%</span>
-                                                        : <span className="text-slate-600">—</span>}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                ))}
+                                {GROUPS.map(g => {
+                                    const d = subMatrix[g];
+                                    if (!d) return null;
+                                    const status = d.pct >= 75 ? '✅ Good' : d.pct >= 65 ? '⚠️ Risk' : '🚨 Critical';
+                                    return (
+                                        <tr key={g} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                                            <td className="py-3 px-4 font-bold" style={{ color: GROUP_COLORS[g] }}>{g}</td>
+                                            <td className="py-3 px-4 text-center text-slate-300">{d.totalStudents || 0}</td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className="font-bold" style={{ color: pctColor(d.pct) }}>{d.pct}%</span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center text-sm">{status}</td>
+                                            <td className="py-3 px-4 text-center text-emerald-400 font-semibold">{d.present}</td>
+                                            <td className="py-3 px-4 text-center text-amber-400 font-semibold">{d.late}</td>
+                                            <td className="py-3 px-4 text-center text-rose-400 font-semibold">{d.absent}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                {/* Risk Distribution Mini-Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="glass-card-solid p-4 rounded-xl border-l-4 border-green-500 bg-green-500/10">
+                        <p className="text-2xl font-bold text-green-400">{riskDistribution.low}</p>
+                        <p className="text-xs text-slate-400 mt-1">Low Risk (≥80%)</p>
+                    </div>
+                    <div className="glass-card-solid p-4 rounded-xl border-l-4 border-amber-500 bg-amber-500/10">
+                        <p className="text-2xl font-bold text-amber-400">{riskDistribution.medium}</p>
+                        <p className="text-xs text-slate-400 mt-1">Medium Risk (75-80%)</p>
+                    </div>
+                    <div className="glass-card-solid p-4 rounded-xl border-l-4 border-orange-500 bg-orange-500/10">
+                        <p className="text-2xl font-bold text-orange-400">{riskDistribution.high}</p>
+                        <p className="text-xs text-slate-400 mt-1">High Risk (65-75%)</p>
+                    </div>
+                    <div className="glass-card-solid p-4 rounded-xl border-l-4 border-red-600 bg-red-500/10">
+                        <p className="text-2xl font-bold text-red-400">{riskDistribution.critical}</p>
+                        <p className="text-xs text-slate-400 mt-1">Critical (&lt;65%)</p>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    /* ════════════════════════════════════════════════════════════════════
+       SESSION TIMELINE TAB
+    ════════════════════════════════════════════════════════════════════ */
+    const TimelineTab = () => {
+        if (loadingSub) return <Skeleton />;
+        if (!subjectDaily || !mergedDaily.length) return <NoData msg="No session data." />;
+
+        const sessionCards = useMemo(() => {
+            return mergedDaily.map(d => {
+                const dateObj = new Date(d.date);
+                const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' });
+                const firstGroupPct = d[`${GROUPS[0]}_pct`] || 0;
+                
+                // Aggregate present/late/absent across all groups
+                let totalPresent = 0, totalLate = 0, totalAbsent = 0;
+                GROUPS.forEach(g => {
+                    const dailyForGroup = (subjectDaily.daily?.[g] || []).find(x => x.date === d.date);
+                    if (dailyForGroup) {
+                        totalPresent += dailyForGroup.present;
+                        totalLate += dailyForGroup.late;
+                        totalAbsent += dailyForGroup.absent;
+                    }
+                });
+
+                return {
+                    date: d.date,
+                    dayName,
+                    pct: firstGroupPct,
+                    present: totalPresent,
+                    late: totalLate,
+                    absent: totalAbsent,
+                };
+            });
+        }, [mergedDaily, subjectDaily, GROUPS]);
+
+        return (
+            <div className="space-y-6">
+                {/* Large Area Chart with 75% Reference Line */}
+                <div className="glass-card-solid p-6 rounded-2xl">
+                    <h3 className="text-sm font-semibold text-slate-300 mb-4">📈 Attendance Trend Over Sessions</h3>
+                    <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={mergedDaily} margin={{ left: 0, right: 8 }}>
+                                <defs>
+                                    {GROUPS.map(g => (
+                                        <linearGradient key={g} id={`grad_${g}`} x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={GROUP_COLORS[g]} stopOpacity={0.35} />
+                                            <stop offset="95%" stopColor={GROUP_COLORS[g]} stopOpacity={0.03} />
+                                        </linearGradient>
+                                    ))}
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                                <XAxis 
+                                    dataKey="date" 
+                                    tickFormatter={fmt} 
+                                    tick={{ fill: '#94a3b8', fontSize: 10 }} 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    interval="preserveStartEnd" 
+                                />
+                                <YAxis 
+                                    domain={[0, 100]} 
+                                    tick={{ fill: '#94a3b8', fontSize: 11 }} 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    unit="%" 
+                                />
+                                <ReferenceLine 
+                                    y={75} 
+                                    stroke="#ef4444" 
+                                    strokeDasharray="5 5" 
+                                    label={{ value: '75% Threshold', position: 'right', fill: '#ef4444', fontSize: 11 }} 
+                                />
+                                <Tooltip {...TP} labelFormatter={fmt} formatter={(v) => [`${v}%`]} />
+                                {GROUPS.map(g => (
+                                    <Area 
+                                        key={g} 
+                                        type="monotone" 
+                                        dataKey={`${g}_pct`} 
+                                        stroke={GROUP_COLORS[g]} 
+                                        fill={`url(#grad_${g})`}
+                                        strokeWidth={2} 
+                                        dot={false} 
+                                        name={`${g}_pct`} 
+                                    />
+                                ))}
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Session Cards Grid */}
+                <div>
+                    <h3 className="text-sm font-semibold text-slate-300 mb-4">📋 Per-Session Breakdown</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {sessionCards.map((session, idx) => (
+                            <div key={idx} className="glass-card-solid p-4 rounded-xl border border-slate-700/50">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div>
+                                        <p className="text-sm font-bold text-white">{fmt(session.date)}</p>
+                                        <p className="text-xs text-slate-500">{session.dayName}</p>
+                                    </div>
+                                    <span className="text-2xl font-bold" style={{ color: pctColor(session.pct) }}>{session.pct}%</span>
+                                </div>
+                                <div className="flex gap-2 text-xs">
+                                    <span className="flex-1 bg-emerald-500/20 text-emerald-400 font-semibold px-2 py-1 rounded text-center">
+                                        ✅ {session.present}
+                                    </span>
+                                    <span className="flex-1 bg-amber-500/20 text-amber-400 font-semibold px-2 py-1 rounded text-center">
+                                        ⏰ {session.late}
+                                    </span>
+                                    <span className="flex-1 bg-rose-500/20 text-rose-400 font-semibold px-2 py-1 rounded text-center">
+                                        ❌ {session.absent}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -699,197 +604,6 @@ const AttendanceReport = () => {
         );
     };
 
-    /* ════════════════════════════════════════════════════════════════════
-       ADVANCED ANALYTICS TAB
-    ════════════════════════════════════════════════════════════════════ */
-    const AdvancedTab = () => {
-        return (
-            <div className="space-y-6">
-                {/* Class selector */}
-                <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-sm text-slate-400 font-medium">Select class:</span>
-                    <div className="flex flex-wrap gap-2">
-                        {myClasses.map(cls => (
-                            <button key={cls.classId} onClick={() => setSelectedClassForAdvanced(cls.classId)}
-                                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all
-                                    ${selectedClassForAdvanced === cls.classId
-                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
-                                        : 'bg-slate-800/70 text-slate-300 hover:bg-slate-700 border border-slate-700/50'}`}>
-                                {cls.classId}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {loadingAdvanced ? <Skeleton h={300} /> : !classInsights ? (
-                    <NoData msg="No insights available. Select a class first." />
-                ) : (
-                    <div className="space-y-6">
-                        {/* Health Score Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="glass-card-solid p-4 rounded-xl">
-                                <div className="text-3xl font-bold" style={{ color: pctColor(classInsights.avgAttendance) }}>
-                                    {classInsights.avgAttendance}%
-                                </div>
-                                <p className="text-xs text-slate-400 mt-1">Class Average</p>
-                            </div>
-                            <div className="glass-card-solid p-4 rounded-xl">
-                                <div className="text-3xl font-bold text-blue-400">{classInsights.healthScore}</div>
-                                <p className="text-xs text-slate-400 mt-1">Health Score (0-100)</p>
-                            </div>
-                            <div className="glass-card-solid p-4 rounded-xl">
-                                <div className="text-3xl font-bold text-green-400">{classInsights.maxAttendance}%</div>
-                                <p className="text-xs text-slate-400 mt-1">Best Student</p>
-                            </div>
-                            <div className="glass-card-solid p-4 rounded-xl">
-                                <div className="text-3xl font-bold text-red-400">{classInsights.minAttendance}%</div>
-                                <p className="text-xs text-slate-400 mt-1">Lowest Student</p>
-                            </div>
-                        </div>
-
-                        {/* Risk Distribution */}
-                        <div className="glass-card-solid p-6 rounded-2xl">
-                            <h3 className="font-semibold text-slate-200 mb-4">🎯 Risk Distribution</h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                <div className="p-3 rounded-lg border-l-4" style={{ borderColor: '#10b981', backgroundColor: '#10b981' }}>
-                                    <div className="text-2xl font-bold text-white">{classInsights.riskDistribution.low}</div>
-                                    <p className="text-xs text-white/80">Low Risk</p>
-                                </div>
-                                <div className="p-3 rounded-lg border-l-4" style={{ borderColor: '#f59e0b', backgroundColor: '#f59e0b' }}>
-                                    <div className="text-2xl font-bold text-white">{classInsights.riskDistribution.medium}</div>
-                                    <p className="text-xs text-white/80">Medium Risk</p>
-                                </div>
-                                <div className="p-3 rounded-lg border-l-4" style={{ borderColor: '#ff9800', backgroundColor: '#ff9800' }}>
-                                    <div className="text-2xl font-bold text-white">{classInsights.riskDistribution.high}</div>
-                                    <p className="text-xs text-white/80">High Risk</p>
-                                </div>
-                                <div className="p-3 rounded-lg border-l-4 border-red-600" style={{ backgroundColor: '#dc2626' }}>
-                                    <div className="text-2xl font-bold text-white">{classInsights.riskDistribution.critical}</div>
-                                    <p className="text-xs text-white/80">Critical</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Statistics */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="glass-card-solid p-4 rounded-xl">
-                                <p className="text-sm text-slate-400 mb-1">Standard Deviation</p>
-                                <p className="text-2xl font-bold">{classInsights.standardDeviation}%</p>
-                                <p className="text-xs text-slate-500 mt-2">(Lower = more consistent)</p>
-                            </div>
-                            <div className="glass-card-solid p-4 rounded-xl">
-                                <p className="text-sm text-slate-400 mb-1">Total Sessions</p>
-                                <p className="text-2xl font-bold">{classInsights.totalSessions}</p>
-                                <p className="text-xs text-slate-500 mt-2">Across {classInsights.totalStudents} students</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    /* ════════════════════════════════════════════════════════════════════
-       RISK ASSESSMENT TAB
-    ════════════════════════════════════════════════════════════════════ */
-    const RiskTab = () => {
-        return (
-            <div className="space-y-6">
-                {/* Class selector */}
-                <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-sm text-slate-400 font-medium">Select class:</span>
-                    <div className="flex flex-wrap gap-2">
-                        {myClasses.map(cls => (
-                            <button key={cls.classId} onClick={() => setSelectedClassForAdvanced(cls.classId)}
-                                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all
-                                    ${selectedClassForAdvanced === cls.classId
-                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white'
-                                        : 'bg-slate-800/70 text-slate-300 hover:bg-slate-700 border border-slate-700/50'}`}>
-                                {cls.classId}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {loadingAdvanced ? <Skeleton h={300} /> : !riskAssessments || !riskAssessments.students?.length ? (
-                    <NoData msg="No risk data available. Select a class first." />
-                ) : (
-                    <div className="space-y-4">
-                        {/* Risk Summary */}
-                        <div className="glass-card-solid p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
-                            <p className="text-sm text-blue-300">{riskAssessments.recommendedAction}</p>
-                        </div>
-
-                        {/* Risk Table */}
-                        <div className="glass-card-solid p-4 rounded-2xl overflow-x-auto">
-                            <table className="w-full text-sm min-w-full">
-                                <thead>
-                                    <tr className="border-b border-slate-700">
-                                        <th className="text-left py-3 px-4 text-slate-400 font-medium">Student</th>
-                                        <th className="text-center py-3 px-4 text-slate-400 font-medium">Risk Level</th>
-                                        <th className="text-center py-3 px-4 text-slate-400 font-medium">Current %</th>
-                                        <th className="text-center py-3 px-4 text-slate-400 font-medium">Trend</th>
-                                        <th className="text-center py-3 px-4 text-slate-400 font-medium">Predicted %</th>
-                                        <th className="text-center py-3 px-4 text-slate-400 font-medium">Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {riskAssessments.students.map((student, idx) => {
-                                        let riskColor = '#10b981';
-                                        let riskLabel = 'Low';
-                                        if (student.riskLevel === 'medium') { riskColor = '#f59e0b'; riskLabel = 'Medium'; }
-                                        else if (student.riskLevel === 'high') { riskColor = '#ff9800'; riskLabel = 'High'; }
-                                        else if (student.riskLevel === 'critical') { riskColor = '#dc2626'; riskLabel = 'Critical'; }
-
-                                        return (
-                                            <tr key={idx} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
-                                                <td className="py-3 px-4">
-                                                    <div>
-                                                        <p className="font-semibold text-slate-200">{student.name}</p>
-                                                        <p className="text-xs text-slate-500">{student.rollNumber}</p>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-4 text-center">
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold text-white"
-                                                        style={{ backgroundColor: riskColor }}>
-                                                        {riskLabel}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4 text-center">
-                                                    <span className="font-semibold" style={{ color: pctColor(student.recentPercentage) }}>
-                                                        {student.recentPercentage}%
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4 text-center">
-                                                    {student.isDropping ? (
-                                                        <span className="text-red-400 text-sm font-bold">📉 {student.attendanceDrop.toFixed(1)}%</span>
-                                                    ) : (
-                                                        <span className="text-green-400 text-sm font-bold">📈 Stable</span>
-                                                    )}
-                                                </td>
-                                                <td className="py-3 px-4 text-center">
-                                                    <span className="font-semibold" style={{ color: pctColor(student.predictedEndOfSemesterPercentage) }}>
-                                                        {student.predictedEndOfSemesterPercentage}%
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4 text-center">
-                                                    <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
-                                                        style={{ backgroundColor: `${riskColor}20`, border: `2px solid ${riskColor}` }}>
-                                                        <span className="font-bold" style={{ color: riskColor }}>{student.riskScore}</span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     /* ── current subject info ────────────────────────────────────────────── */
     const curSub = ALL_SUBJECTS.find(s => s.code === subCode) || mySubjects.find(s => s.code === subCode);
 
@@ -928,11 +642,8 @@ const AttendanceReport = () => {
             <MainTabBar />
 
             {mainTab === 'overview' && <OverviewTab />}
-            {mainTab === 'daily'    && <DailyTab />}
-            {mainTab === 'compare'  && <CompareTab />}
-            {mainTab === 'heatmap'  && <HeatmapTab />}
-            {mainTab === 'advanced' && <AdvancedTab />}
-            {mainTab === 'risk'     && <RiskTab />}
+            {mainTab === 'timeline' && <TimelineTab />}
+            {mainTab === 'heatmap' && <HeatmapTab />}
         </div>
     );
 };

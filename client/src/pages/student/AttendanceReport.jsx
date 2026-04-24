@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
 import {
-    ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend,
-    BarChart, Bar, XAxis, YAxis, CartesianGrid,
-    AreaChart, Area, LineChart, Line,
-    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-    ScatterChart, Scatter,
+    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+    AreaChart, Area, LineChart, Line, ReferenceLine,
 } from 'recharts';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import { generateStudentInsights, calculateTrend, calculateCurrentStreak } from '../../utils/insightGenerator';
 
 const STATUS_COLORS = { Present: '#10b981', Late: '#f59e0b', Absent: '#ef4444' };
+const pctColor = (p) => p >= 75 ? '#10b981' : p >= 65 ? '#f59e0b' : '#ef4444';
 
 const StatCard = ({ label, value, color, icon }) => (
     <div className={`glass-card-solid p-3 sm:p-5 flex items-center gap-3 sm:gap-4 border-l-4`} style={{ borderColor: color }}>
@@ -77,8 +76,6 @@ const AttendanceReport = () => {
     const [loading, setLoading] = useState(true);
     const [reportLoading, setReportLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('personal');
-    const [advancedAnalytics, setAdvancedAnalytics] = useState(null);
-    const [advancedLoading, setAdvancedLoading] = useState(false);
 
     const quickNav = [
         { label: 'Dashboard', path: '/student/dashboard', icon: '📊' },
@@ -247,9 +244,8 @@ const AttendanceReport = () => {
                     <div className="overflow-x-auto pb-1 -mx-1 px-1 mb-6">
                         <div className="flex gap-2 min-w-max">
                             {[
-                                { id: 'personal', label: '🎓 My Analytics' },
-                                { id: 'group', label: '👥 Group Analytics' },
-                                { id: 'advanced', label: '🚀 Advanced' },
+                                { id: 'personal', label: '🎓 My Attendance' },
+                                { id: 'group', label: '👥 Class Comparison' },
                             ].map(t => (
                                 <button key={t.id} onClick={() => setActiveTab(t.id)}
                                     className={`px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap ${activeTab === t.id
@@ -268,11 +264,8 @@ const AttendanceReport = () => {
                     ) : activeTab === 'personal' ? (
                         <PersonalTab summary={summary} total={total} pct={pct}
                             pieData={pieData} trendData={trendData} sortedRecords={sortedRecords} />
-                    ) : activeTab === 'group' ? (
-                        <GroupTab groupDaily={groupDaily} selectedClass={selectedClass} />
                     ) : (
-                        <AdvancedAnalyticsTab loading={advancedLoading} analytics={advancedAnalytics} selectedClass={selectedClass} />
-                    )}
+                        <GroupTab groupDaily={groupDaily} selectedClass={selectedClass} />
                     )}
                 </div>
             </div>
@@ -369,7 +362,7 @@ const PersonalTab = ({ summary, total, pct, pieData, trendData, sortedRecords })
             {trendData.length > 0 && (
                 <div className="glass-card-solid p-5">
                     <h3 className="text-sm font-semibold text-slate-300 mb-4">📈 Cumulative Attendance Trend</h3>
-                    <div className="h-52">
+                    <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={trendData}>
                                 <defs>
@@ -381,6 +374,7 @@ const PersonalTab = ({ summary, total, pct, pieData, trendData, sortedRecords })
                                 <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                                 <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                                 <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
+                                <ReferenceLine y={75} stroke="#ef4444" strokeDasharray="5 5" label={{ value: '75% Threshold', position: 'right', fill: '#ef4444', fontSize: 11 }} />
                                 <Tooltip formatter={(v) => [`${v}%`, 'Attendance']}
                                     contentStyle={{ background: '#1e293b', border: '1px solid #6366f1', borderRadius: 8, color: '#e2e8f0' }} />
                                 <Area type="monotone" dataKey="pct" stroke="#6366f1" strokeWidth={3}
@@ -600,134 +594,6 @@ const GroupTab = ({ groupDaily, selectedClass }) => {
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-/* ════════════════════════════════════════════════════
-   Advanced Analytics Tab
-════════════════════════════════════════════════════ */
-const AdvancedAnalyticsTab = ({ loading, analytics, selectedClass }) => {
-    if (loading) {
-        return <div className="space-y-4">{[1, 2, 3].map(i => <div key={i} className="h-48 skeleton rounded-2xl"></div>)}</div>;
-    }
-
-    if (!analytics || analytics.error) {
-        return <div className="glass-card-solid p-8 text-center text-slate-400">No advanced analytics available yet.</div>;
-    }
-
-    const { performance, comparative, risk, trend, summary } = analytics;
-    const pctColor = (p) => p >= 75 ? '#10b981' : p >= 65 ? '#f59e0b' : '#ef4444';
-
-    return (
-        <div className="space-y-6">
-            {/* Performance Score & Recommendations */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="glass-card-solid p-6 rounded-2xl text-center">
-                    <p className="text-sm text-slate-400 mb-2">Performance Score</p>
-                    <div className="relative w-32 h-32 mx-auto">
-                        <svg className="w-32 h-32 -rotate-90" viewBox="0 0 36 36">
-                            <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
-                                fill="none" stroke="#1e293b" strokeWidth="3" />
-                            <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
-                                fill="none" strokeWidth="3"
-                                strokeDasharray={`${performance.performanceScore}, 100`}
-                                stroke={pctColor(performance.performanceScore)}
-                                strokeLinecap="round" />
-                        </svg>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-2xl font-bold">{performance.performanceScore}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="glass-card-solid p-6 rounded-2xl">
-                    <p className="text-sm text-slate-400 mb-3 font-semibold">📋 Recommendations</p>
-                    <div className="space-y-2 text-sm">
-                        {summary.recommendation && summary.recommendation.map((rec, i) => (
-                            <p key={i} className="text-slate-300">{rec}</p>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Key Metrics */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="glass-card-solid p-4 rounded-xl text-center">
-                    <p className="text-xs text-slate-400">Current Streak</p>
-                    <p className="text-2xl font-bold text-blue-400 mt-1">🔥{performance.currentStreak}</p>
-                    <p className="text-xs text-slate-500 mt-1">sessions</p>
-                </div>
-                <div className="glass-card-solid p-4 rounded-xl text-center">
-                    <p className="text-xs text-slate-400">Longest Streak</p>
-                    <p className="text-2xl font-bold text-purple-400 mt-1">⭐{performance.longestStreak}</p>
-                </div>
-                <div className="glass-card-solid p-4 rounded-xl text-center">
-                    <p className="text-xs text-slate-400">Risk Level</p>
-                    <p className="text-2xl font-bold mt-1" style={{ color: risk.riskLevel === 'critical' ? '#dc2626' : risk.riskLevel === 'high' ? '#ff9800' : risk.riskLevel === 'medium' ? '#f59e0b' : '#10b981' }}>
-                        {risk.riskLevel.toUpperCase()}
-                    </p>
-                </div>
-                <div className="glass-card-solid p-4 rounded-xl text-center">
-                    <p className="text-xs text-slate-400">Percentile</p>
-                    <p className="text-2xl font-bold text-indigo-400 mt-1">#{comparative.percentileRank}</p>
-                </div>
-            </div>
-
-            {/* Trend & Comparison */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="glass-card-solid p-5 rounded-xl">
-                    <p className="text-sm font-semibold text-slate-300 mb-3">📈 Your Trend</p>
-                    <div className="space-y-2 text-sm">
-                        <p>Direction: <span className="font-bold" style={{ color: trend.trendDirection === 'improving' ? '#10b981' : trend.trendDirection === 'declining' ? '#ef4444' : '#f59e0b' }}>
-                            {trend.trendDirection === 'improving' ? '📈 Improving' : trend.trendDirection === 'declining' ? '📉 Declining' : '➡️ Stable'}
-                        </span></p>
-                        <p>7-Day Average: <span className="font-bold text-indigo-400">{trend.movingAverage7d}%</span></p>
-                        <p>Consistency: <span className="font-bold text-blue-400">{trend.consistency}%</span></p>
-                        <p>Growth Rate: <span className="font-bold" style={{ color: trend.growthRate > 0 ? '#10b981' : '#ef4444' }}>{trend.growthRate > 0 ? '+' : ''}{trend.growthRate}%</span></p>
-                    </div>
-                </div>
-
-                <div className="glass-card-solid p-5 rounded-xl">
-                    <p className="text-sm font-semibold text-slate-300 mb-3">🎯 Your Position</p>
-                    <div className="space-y-2 text-sm">
-                        <p>Your Attendance: <span className="font-bold" style={{ color: pctColor(comparative.studentPercentage) }}>{comparative.studentPercentage}%</span></p>
-                        <p>Class Average: <span className="font-bold text-amber-400">{comparative.classAverage}%</span></p>
-                        <p>Difference: <span className="font-bold" style={{ color: comparative.isAboveAverage ? '#10b981' : '#ef4444' }}>
-                            {comparative.isAboveAverage ? '+' : ''}{comparative.comparisonToClass}%
-                        </span></p>
-                        <p>Your Rank: <span className="font-bold text-purple-400">{comparative.ranking}/{comparative.totalStudentsInClass}</span></p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Risk Assessment */}
-            {risk.isDropping && (
-                <div className="glass-card-solid p-4 rounded-xl bg-red-500/10 border border-red-500/30">
-                    <p className="text-sm text-red-300 font-semibold">⚠️ Attendance Warning</p>
-                    <p className="text-sm text-red-200 mt-2">Your attendance has dropped by {Math.abs(risk.attendanceDrop).toFixed(1)}% recently. If this trend continues, your predicted attendance by end of semester will be {risk.predictedEndOfSemesterPercentage}%.</p>
-                </div>
-            )}
-
-            {/* Prediction */}
-            <div className="glass-card-solid p-5 rounded-xl">
-                <p className="text-sm font-semibold text-slate-300 mb-3">🔮 Semester Prediction</p>
-                <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                        <p className="text-xs text-slate-400 mb-2">If current trend continues:</p>
-                        <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div className="absolute h-full bg-gradient-to-r from-indigo-500 to-purple-500"
-                                style={{ width: `${Math.min(risk.predictedEndOfSemesterPercentage, 100)}%` }}></div>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-lg font-bold" style={{ color: pctColor(risk.predictedEndOfSemesterPercentage) }}>
-                            {risk.predictedEndOfSemesterPercentage}%
-                        </p>
-                        <p className="text-xs text-slate-400">predicted</p>
-                    </div>
                 </div>
             </div>
         </div>
