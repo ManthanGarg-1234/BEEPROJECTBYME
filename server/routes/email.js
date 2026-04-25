@@ -153,15 +153,17 @@ router.post('/send', [
         }
         
         // Validate email credentials
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        if (!process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.SMTP_HOST || !process.env.SMTP_PORT) {
             return res.status(400).json({ 
-                message: 'Email service not configured. Please set SMTP_USER and SMTP_PASS environment variables.' 
+                message: 'Email service not configured. Please set SMTP_USER, SMTP_PASS, SMTP_HOST, and SMTP_PORT environment variables.' 
             });
         }
 
-        // Create email transporter (using SMTP/Gmail)
+        // Create email transporter (using custom SMTP server)
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT),
+            secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports like 587
             auth: {
                 user: process.env.SMTP_USER,
                 pass: process.env.SMTP_PASS
