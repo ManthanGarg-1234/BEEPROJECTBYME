@@ -42,6 +42,21 @@ const EmailNotifications = () => {
         }
     }, [selectedClass]);
 
+    // Auto-clear messages after 5 seconds
+    useEffect(() => {
+        if (successMessage) {
+            const timer = setTimeout(() => setSuccessMessage(''), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage]);
+
+    useEffect(() => {
+        if (errorMessage) {
+            const timer = setTimeout(() => setErrorMessage(''), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [errorMessage]);
+
     const fetchLowAttendanceStudents = async () => {
         setLoading(true);
         try {
@@ -116,13 +131,39 @@ const EmailNotifications = () => {
                 template: 'attendance-warning'
             });
 
-            setSuccessMessage(`Emails sent successfully! (${res.data.results.success} sent, ${res.data.results.failed} failed)`);
+            const successMsg = `Emails sent successfully! (${res.data.results.success} sent, ${res.data.results.failed} failed)`;
+            setSuccessMessage(successMsg);
+            
+            // Show toast notification
+            window.dispatchEvent(new CustomEvent('show-toast', {
+                detail: {
+                    message: successMsg,
+                    type: 'success',
+                    duration: 5000
+                }
+            }));
+
             setSelectedStudents(new Set());
             setShowPreview(false);
             fetchLowAttendanceStudents(); // Refresh the list
+            
+            // Automatically fetch and display email history
+            setTimeout(() => {
+                fetchEmailHistory();
+            }, 500);
         } catch (err) {
             console.error('Error sending emails:', err);
-            setErrorMessage(err.response?.data?.message || 'Failed to send emails');
+            const errorMsg = err.response?.data?.message || 'Failed to send emails';
+            setErrorMessage(errorMsg);
+            
+            // Show error toast notification
+            window.dispatchEvent(new CustomEvent('show-toast', {
+                detail: {
+                    message: errorMsg,
+                    type: 'error',
+                    duration: 5000
+                }
+            }));
         } finally {
             setSendingEmails(false);
         }

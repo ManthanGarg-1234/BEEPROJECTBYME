@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
 import {
     ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-    AreaChart, Area, LineChart, Line, ReferenceLine,
+    AreaChart, Area, LineChart, Line, ReferenceLine, Cell, PieChart, Pie,
 } from 'recharts';
 import api from '../../api';
 import { useAuth } from '../../context/AuthContext';
