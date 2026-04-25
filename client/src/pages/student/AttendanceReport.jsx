@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, NavLink } from 'react-router-dom';
 import {
-    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+    ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
     AreaChart, Area, LineChart, Line, ReferenceLine, Cell, PieChart, Pie,
 } from 'recharts';
 import api from '../../api';
@@ -113,8 +113,13 @@ const AttendanceReport = () => {
                     api.get(`/analytics/class-daily/${selectedId}`),
                 ]);
                 setRecords(rRec.data || []);
-                setGroupDaily(rGroup.data?.daily || []);
-            } catch { setRecords([]); setGroupDaily([]); }
+                const groupData = rGroup.data?.daily || [];
+                setGroupDaily(groupData);
+            } catch (err) {
+                console.error('Error loading attendance/group data:', err);
+                setRecords([]);
+                setGroupDaily([]);
+            }
             finally { setReportLoading(false); }
         })();
     }, [selectedId]);
@@ -448,15 +453,30 @@ const PersonalTab = ({ summary, total, pct, pieData, trendData, sortedRecords })
    Group Analytics Tab
 ════════════════════════════════════════════════════ */
 const GroupTab = ({ groupDaily, selectedClass }) => {
-    if (!groupDaily.length) return (
-        <div className="glass-card-solid p-8 text-center text-slate-400">No group data available yet.</div>
-    );
+    if (!groupDaily || !Array.isArray(groupDaily) || groupDaily.length === 0) {
+        return (
+            <div className="glass-card-solid p-8 text-center">
+                <div className="text-slate-400 mb-2">📊 No group data available yet</div>
+                <p className="text-xs text-slate-500">Class comparison data will appear once sessions have been recorded.</p>
+                {selectedClass && <p className="text-xs text-slate-600 mt-2">Class: {selectedClass.classId} - {selectedClass.subject}</p>}
+            </div>
+        );
+    }
 
-    const totalPresent = groupDaily.reduce((s, d) => s + d.present, 0);
-    const totalLate = groupDaily.reduce((s, d) => s + d.late, 0);
-    const totalAbsent = groupDaily.reduce((s, d) => s + d.absent, 0);
+    // Validate data structure
+    if (!groupDaily[0]?.date) {
+        return (
+            <div className="glass-card-solid p-8 text-center text-slate-400">
+                ⚠️ Invalid group data format received. Please refresh the page.
+            </div>
+        );
+    }
+
+    const totalPresent = groupDaily.reduce((s, d) => s + (d.present || 0), 0);
+    const totalLate = groupDaily.reduce((s, d) => s + (d.late || 0), 0);
+    const totalAbsent = groupDaily.reduce((s, d) => s + (d.absent || 0), 0);
     const grandTotal = totalPresent + totalLate + totalAbsent;
-    const avgPct = groupDaily.length ? Math.round(groupDaily.reduce((s, d) => s + d.percentage, 0) / groupDaily.length * 10) / 10 : 0;
+    const avgPct = groupDaily.length ? Math.round(groupDaily.reduce((s, d) => s + (d.percentage || 0), 0) / groupDaily.length * 10) / 10 : 0;
 
     return (
         <div className="space-y-6">
