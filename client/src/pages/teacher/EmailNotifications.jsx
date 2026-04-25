@@ -131,17 +131,28 @@ const EmailNotifications = () => {
                 template: 'attendance-warning'
             });
 
-            const successMsg = `Emails sent successfully! (${res.data.results.success} sent, ${res.data.results.failed} failed)`;
-            setSuccessMessage(successMsg);
-            
-            // Show toast notification
-            window.dispatchEvent(new CustomEvent('show-toast', {
-                detail: {
-                    message: successMsg,
-                    type: 'success',
-                    duration: 5000
-                }
-            }));
+            // Check if this was a partial failure (some sent, some failed)
+            if (res.data.results.failed > 0 && res.data.results.success > 0) {
+                const warningMsg = `⚠️ Partial Send: ${res.data.results.success} sent, ${res.data.results.failed} failed. Check SMTP configuration.`;
+                setSuccessMessage(warningMsg);
+                window.dispatchEvent(new CustomEvent('show-toast', {
+                    detail: {
+                        message: warningMsg,
+                        type: 'warning',
+                        duration: 6000
+                    }
+                }));
+            } else {
+                const successMsg = `✅ Emails sent successfully! (${res.data.results.success} sent, ${res.data.results.failed} failed)`;
+                setSuccessMessage(successMsg);
+                window.dispatchEvent(new CustomEvent('show-toast', {
+                    detail: {
+                        message: successMsg,
+                        type: 'success',
+                        duration: 5000
+                    }
+                }));
+            }
 
             setSelectedStudents(new Set());
             setShowPreview(false);
@@ -153,7 +164,7 @@ const EmailNotifications = () => {
             }, 500);
         } catch (err) {
             console.error('Error sending emails:', err);
-            const errorMsg = err.response?.data?.message || 'Failed to send emails';
+            const errorMsg = err.response?.data?.message || 'Failed to send emails. Please check SMTP credentials (admin@chitkara.edu)';
             setErrorMessage(errorMsg);
             
             // Show error toast notification
@@ -161,7 +172,7 @@ const EmailNotifications = () => {
                 detail: {
                     message: errorMsg,
                     type: 'error',
-                    duration: 5000
+                    duration: 6000
                 }
             }));
         } finally {

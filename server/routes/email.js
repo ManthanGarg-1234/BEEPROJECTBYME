@@ -246,8 +246,21 @@ router.post('/send', [
         emailLog.completedAt = new Date();
         await emailLog.save();
         
+        // If all emails failed, return error status
+        if (results.success.length === 0 && results.failed.length > 0) {
+            return res.status(400).json({
+                message: `Failed to send emails to all ${results.failed.length} recipients. Please check SMTP credentials.`,
+                batchId,
+                results: {
+                    success: results.success.length,
+                    failed: results.failed.length,
+                    details: results.failed.slice(0, 3) // Show first 3 errors
+                }
+            });
+        }
+        
         res.json({
-            message: 'Emails sent',
+            message: `Emails sent successfully! ${results.success.length} sent, ${results.failed.length} failed`,
             batchId,
             results: {
                 success: results.success.length,
