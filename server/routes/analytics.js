@@ -423,8 +423,8 @@ router.get('/group-overview', auth, authorize('teacher'), async (req, res) => {
         allClasses.forEach(c => {
             const dashIdx = c.classId.indexOf('-');
             if (dashIdx === -1) return;
-            const code = c.classId.substring(0, dashIdx);
-            const group = c.classId.substring(dashIdx + 1);
+            const group = c.classId.substring(0, dashIdx);
+            const code = c.classId.substring(dashIdx + 1);
             if (!subjectMap[code]) subjectMap[code] = c.subject || code;
             groupSet.add(group);
         });
@@ -461,7 +461,7 @@ router.get('/group-overview', auth, authorize('teacher'), async (req, res) => {
         for (const sub of SUBJECTS) {
             matrix[sub.code] = {};
             for (const group of GROUPS) {
-                const cid = `${sub.code}-${group}`;
+                const cid = `${group}-${sub.code}`;
                 const cls = classMap[cid];
                 if (!cls) { matrix[sub.code][group] = null; continue; }
                 const k = cls._id.toString();
@@ -492,7 +492,7 @@ router.get('/group-subject-daily/:subjectCode', auth, authorize('teacher'), asyn
 
         // Dynamically find all classes for this subject owned by this teacher
         const classDocs = await Class.find({
-            classId: { $regex: new RegExp(`^${subjectCode}-`, 'i') },
+            classId: { $regex: new RegExp(`-${subjectCode}$`, 'i') },
             teacher: req.user._id
         }).lean();
         if (classDocs.length === 0) {
@@ -502,7 +502,7 @@ router.get('/group-subject-daily/:subjectCode', auth, authorize('teacher'), asyn
         // Derive GROUPS dynamically from the matched classes
         const GROUPS = classDocs.map(c => {
             const dashIdx = c.classId.indexOf('-');
-            return dashIdx !== -1 ? c.classId.substring(dashIdx + 1) : c.classId;
+            return dashIdx !== -1 ? c.classId.substring(0, dashIdx) : c.classId;
         }).sort();
 
         const classMap = {};
@@ -549,7 +549,7 @@ router.get('/group-subject-daily/:subjectCode', auth, authorize('teacher'), asyn
             const classObjId = sess.class.toString();
             const classIdStr = objToClassId[classObjId];
             const dashIdx = classIdStr ? classIdStr.indexOf('-') : -1;
-            const group = dashIdx !== -1 ? classIdStr.substring(dashIdx + 1) : null;
+            const group = dashIdx !== -1 ? classIdStr.substring(0, dashIdx) : null;
             if (!group) return;
             const cls = classMap[classIdStr];
             if (!cls) return;
@@ -583,7 +583,7 @@ router.get('/group-day-pies/:subjectCode/:date', auth, authorize('teacher'), asy
 
         // Dynamically find all classes for this subject owned by this teacher
         const classDocs = await Class.find({
-            classId: { $regex: new RegExp(`^${subjectCode}-`, 'i') },
+            classId: { $regex: new RegExp(`-${subjectCode}$`, 'i') },
             teacher: req.user._id
         }).lean();
         if (classDocs.length === 0) {
@@ -593,7 +593,7 @@ router.get('/group-day-pies/:subjectCode/:date', auth, authorize('teacher'), asy
         // Derive GROUPS dynamically
         const GROUPS = classDocs.map(c => {
             const dashIdx = c.classId.indexOf('-');
-            return dashIdx !== -1 ? c.classId.substring(dashIdx + 1) : c.classId;
+            return dashIdx !== -1 ? c.classId.substring(0, dashIdx) : c.classId;
         }).sort();
 
         const classMap = {};
@@ -624,7 +624,7 @@ router.get('/group-day-pies/:subjectCode/:date', auth, authorize('teacher'), asy
 
         const pies = {};
         for (const group of GROUPS) {
-            const cls = classMap[`${subjectCode}-${group}`];
+            const cls = classMap[`${group}-${subjectCode}`];
             if (!cls) { pies[group] = null; continue; }
             const sess = sessByClass[cls._id.toString()];
             if (!sess) { pies[group] = null; continue; }

@@ -76,19 +76,19 @@ const AttendanceReport = () => {
         api.get('/classes').then(r => {
             const classes = r.data;
             setMyClasses(classes);
-            // classId format: CODE-GROUP e.g. CN-G18
+            // classId format: GROUP-CODE e.g. G22-DM
             const codes = [...new Set(classes.map(c => {
                 const dashIdx = c.classId.indexOf('-');
-                return dashIdx !== -1 ? c.classId.substring(0, dashIdx) : c.classId;
+                return dashIdx !== -1 ? c.classId.substring(dashIdx + 1) : c.classId;
             }))];
             const filtered = codes.map(code => {
-                const cls = classes.find(c => c.classId.startsWith(code + '-'));
+                const cls = classes.find(c => c.classId.endsWith('-' + code));
                 return { code, name: cls?.subject || code, icon: SUBJECT_ICONS[code] || '📖' };
             });
             setMySubjects(filtered);
             if (filtered.length > 0) {
                 setSubCode(filtered[0].code);
-                const firstClass = classes.find(c => c.classId.startsWith(filtered[0].code + '-'));
+                const firstClass = classes.find(c => c.classId.endsWith('-' + filtered[0].code));
                 setHeatmapClass(firstClass?.classId || '');
             }
             // Fetch overview immediately after we know which classes the teacher has
@@ -210,7 +210,7 @@ const AttendanceReport = () => {
     const exportCSV = async () => {
         try {
             const firstGroup = GROUPS[0] || '';
-            const classId = firstGroup ? `${subCode}-${firstGroup}` : subCode;
+            const classId = firstGroup ? `${firstGroup}-${subCode}` : subCode;
             const r = await api.get(`/analytics/csv/${classId}`, { responseType: 'blob' });
             const url = URL.createObjectURL(r.data);
             const a = document.createElement('a'); a.href = url;
@@ -610,7 +610,7 @@ const AttendanceReport = () => {
     // Classes for current subject
     const curSubClasses = myClasses.filter(c => {
         const dashIdx = c.classId.indexOf('-');
-        return dashIdx !== -1 ? c.classId.substring(0, dashIdx) === subCode : false;
+        return dashIdx !== -1 ? c.classId.substring(dashIdx + 1) === subCode : false;
     });
 
     return (
