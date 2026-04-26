@@ -41,8 +41,7 @@ const TeacherDashboard = () => {
         classes.forEach(cls => {
             const parts = cls.classId.split('-');
             const group = parts.length > 1 ? parts.slice(1).join('-') : cls.classId;
-            if (!seen[group]) seen[group] = { group, classId: cls.classId, studentCount: 0 };
-            seen[group].studentCount += cls.students?.length || 0;
+            if (!seen[group]) seen[group] = { group, classId: cls.classId, studentCount: cls.students?.length || 0 };
         });
         return Object.values(seen);
     }, [classes]);
