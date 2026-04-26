@@ -19,6 +19,10 @@ const EmailNotifications = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [historyLoading, setHistoryLoading] = useState(false);
 
+    // Result popup state
+    const [showResultPopup, setShowResultPopup] = useState(false);
+    const [sendResult, setSendResult] = useState(null);
+
     // Fetch classes on component load
     useEffect(() => {
         const fetchClasses = async () => {
@@ -118,6 +122,7 @@ const EmailNotifications = () => {
             return;
         }
 
+        const totalSelected = selectedStudents.size;
         setSendingEmails(true);
         setErrorMessage('');
         setSuccessMessage('');
@@ -131,49 +136,47 @@ const EmailNotifications = () => {
                 template: 'attendance-warning'
             });
 
-            // Check if this was a partial failure (some sent, some failed)
-            if (res.data.results.failed > 0 && res.data.results.success > 0) {
-                const warningMsg = `⚠️ Partial Send: ${res.data.results.success} sent, ${res.data.results.failed} failed. Check SMTP configuration.`;
+            const sent = res.data.results.success;
+            const failed = res.data.results.failed;
+
+            // Build result data for popup
+            const result = { selected: totalSelected, sent, failed };
+            setSendResult(result);
+            setShowResultPopup(true);
+
+            // Toast notification
+            if (failed > 0 && sent > 0) {
+                const warningMsg = `⚠️ Partial Send: ${sent} sent, ${failed} failed.`;
                 setSuccessMessage(warningMsg);
                 window.dispatchEvent(new CustomEvent('show-toast', {
-                    detail: {
-                        message: warningMsg,
-                        type: 'warning',
-                        duration: 6000
-                    }
+                    detail: { message: warningMsg, type: 'warning', duration: 6000 }
                 }));
             } else {
-                const successMsg = `✅ Emails sent successfully! (${res.data.results.success} sent, ${res.data.results.failed} failed)`;
+                const successMsg = `✅ Emails sent successfully to ${sent} student${sent !== 1 ? 's' : ''}!`;
                 setSuccessMessage(successMsg);
                 window.dispatchEvent(new CustomEvent('show-toast', {
-                    detail: {
-                        message: successMsg,
-                        type: 'success',
-                        duration: 5000
-                    }
+                    detail: { message: successMsg, type: 'success', duration: 5000 }
                 }));
             }
 
             setSelectedStudents(new Set());
             setShowPreview(false);
-            fetchLowAttendanceStudents(); // Refresh the list
-            
-            // Automatically fetch and display email history
-            setTimeout(() => {
-                fetchEmailHistory();
-            }, 500);
+            fetchLowAttendanceStudents();
+
+            // Auto-fetch history
+            setTimeout(() => { fetchEmailHistory(); }, 500);
         } catch (err) {
             console.error('Error sending emails:', err);
-            const errorMsg = err.response?.data?.message || 'Failed to send emails. Please check SMTP credentials (admin@chitkara.edu)';
+            const errorMsg = err.response?.data?.message || 'Failed to send emails. Please check SMTP credentials.';
             setErrorMessage(errorMsg);
-            
-            // Show error toast notification
+
+            // Show failure popup
+            const failedCount = err.response?.data?.results?.failed || totalSelected;
+            setSendResult({ selected: totalSelected, sent: 0, failed: failedCount });
+            setShowResultPopup(true);
+
             window.dispatchEvent(new CustomEvent('show-toast', {
-                detail: {
-                    message: errorMsg,
-                    type: 'error',
-                    duration: 6000
-                }
+                detail: { message: errorMsg, type: 'error', duration: 6000 }
             }));
         } finally {
             setSendingEmails(false);
@@ -182,7 +185,7 @@ const EmailNotifications = () => {
 
     const fetchEmailHistory = async () => {
         if (!selectedClass) return;
-        
+
         setHistoryLoading(true);
         try {
             const res = await api.get(`/email/history?classId=${selectedClass}&limit=20`);
@@ -223,6 +226,106 @@ const EmailNotifications = () => {
             {errorMessage && (
                 <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 flex items-center gap-2">
                     <span>⚠️</span> {errorMessage}
+                </div>
+            )}
+
+            {/* ── RESULT POPUP MODAL ── */}
+            {showResultPopup && sendResult && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center"
+                    style={{ background: 'rgba(0,0,0,0.6)' }}
+                    onClick={() => setShowResultPopup(false)}
+                >
+                    <div
+                        className="relative w-full max-w-md mx-4 rounded-2xl overflow-hidden shadow-2xl"
+                        style={{
+                            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                            border: '1px solid rgba(148,163,184,0.2)',
+                            animation: 'popupIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards'
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Top accent bar */}
+                        <div
+                            className="h-1.5 w-full"
+                            style={{
+                                background: sendResult.failed === 0
+                                    ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+                                    : sendResult.sent === 0
+                                        ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+                                        : 'linear-gradient(90deg, #f59e0b, #f97316)'
+                            }}
+                        />
+
+                        {/* Icon */}
+                        <div className="flex flex-col items-center pt-8 pb-2">
+                            <div
+                                className="w-16 h-16 rounded-full flex items-center justify-center text-3xl mb-4"
+                                style={{
+                                    background: sendResult.failed === 0
+                                        ? 'rgba(34,197,94,0.15)'
+                                        : sendResult.sent === 0
+                                            ? 'rgba(239,68,68,0.15)'
+                                            : 'rgba(245,158,11,0.15)',
+                                    boxShadow: sendResult.failed === 0
+                                        ? '0 0 30px rgba(34,197,94,0.2)'
+                                        : sendResult.sent === 0
+                                            ? '0 0 30px rgba(239,68,68,0.2)'
+                                            : '0 0 30px rgba(245,158,11,0.2)'
+                                }}
+                            >
+                                {sendResult.failed === 0 ? '✅' : sendResult.sent === 0 ? '❌' : '⚠️'}
+                            </div>
+                            <h2 className="text-xl font-bold text-white mb-1">
+                                {sendResult.failed === 0
+                                    ? 'Emails Sent Successfully!'
+                                    : sendResult.sent === 0
+                                        ? 'Email Sending Failed'
+                                        : 'Partially Sent'}
+                            </h2>
+                            <p className="text-sm text-slate-400 mb-6">
+                                {sendResult.failed === 0
+                                    ? 'All emails were delivered to selected students.'
+                                    : sendResult.sent === 0
+                                        ? 'Could not deliver emails. Check SMTP settings.'
+                                        : 'Some emails could not be delivered.'}
+                            </p>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-3 gap-3 px-6 pb-6">
+                            <div className="flex flex-col items-center p-3 rounded-xl" style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)' }}>
+                                <span className="text-2xl font-extrabold text-blue-400">{sendResult.selected}</span>
+                                <span className="text-xs text-slate-400 mt-1 font-semibold">Selected</span>
+                            </div>
+                            <div className="flex flex-col items-center p-3 rounded-xl" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                                <span className="text-2xl font-extrabold text-green-400">{sendResult.sent}</span>
+                                <span className="text-xs text-slate-400 mt-1 font-semibold">Sent</span>
+                            </div>
+                            <div className="flex flex-col items-center p-3 rounded-xl" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                                <span className="text-2xl font-extrabold text-red-400">{sendResult.failed}</span>
+                                <span className="text-xs text-slate-400 mt-1 font-semibold">Failed</span>
+                            </div>
+                        </div>
+
+                        {/* Close button */}
+                        <div className="px-6 pb-6">
+                            <button
+                                onClick={() => setShowResultPopup(false)}
+                                className="w-full py-3 rounded-xl font-bold text-white transition-all"
+                                style={{
+                                    background: sendResult.failed === 0
+                                        ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                                        : sendResult.sent === 0
+                                            ? 'linear-gradient(135deg, #ef4444, #dc2626)'
+                                            : 'linear-gradient(135deg, #f59e0b, #f97316)',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.25)'
+                                }}
+                            >
+                                Got it
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -421,32 +524,34 @@ const EmailNotifications = () => {
                         disabled={!selectedClass || historyLoading}
                         className="w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700/60 text-slate-200 font-semibold hover:border-slate-600 hover:text-white disabled:opacity-50 transition-all"
                     >
-                        📋 Email History
+                        {historyLoading ? '⏳ Loading...' : '📋 Email History'}
                     </button>
 
                     {/* History Display */}
                     {showHistory && (
-                        <div className="glass-card-solid p-6 rounded-2xl max-h-96 overflow-y-auto">
+                        <div className="glass-card-solid p-6 rounded-2xl max-h-[500px] overflow-y-auto">
                             <h4 className="text-sm font-bold text-slate-300 mb-3">RECENT SENDS</h4>
                             {emailHistory.length === 0 ? (
                                 <p className="text-xs text-slate-400">No emails sent yet</p>
                             ) : (
                                 <div className="space-y-3">
                                     {emailHistory.map(log => (
-                                        <div key={log._id} className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                                            <p className="text-xs font-bold text-white mb-1">{log.subject}</p>
-                                            <p className="text-xs text-slate-400">
-                                                {log.sentAt ? new Date(log.sentAt).toLocaleDateString() : 'Pending'}
+                                        <div key={log._id} className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                                            <p className="text-xs font-bold text-white mb-1 truncate">{log.subject}</p>
+                                            <p className="text-xs text-slate-400 mb-3">
+                                                {log.sentAt ? new Date(log.sentAt).toLocaleString() : 'Pending'}
                                             </p>
-                                            <div className="flex gap-2 mt-2 text-xs">
-                                                <span className="px-2 py-0.5 rounded bg-green-500/20 text-green-300">
-                                                    ✓ {log.successCount}
+                                            {/* Stats row: Selected | Sent | Failed */}
+                                            <div className="flex flex-wrap gap-2 mt-3 text-xs font-semibold">
+                                                <span className="px-2.5 py-1 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/20">
+                                                    {log.totalRecipients} selected
                                                 </span>
-                                                {log.failureCount > 0 && (
-                                                    <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300">
-                                                        ✗ {log.failureCount}
-                                                    </span>
-                                                )}
+                                                <span className="px-2.5 py-1 rounded-md bg-green-500/20 text-green-300 border border-green-500/20">
+                                                    {log.successCount} sent
+                                                </span>
+                                                <span className="px-2.5 py-1 rounded-md bg-red-500/20 text-red-300 border border-red-500/20">
+                                                    {log.failureCount} failed
+                                                </span>
                                             </div>
                                         </div>
                                     ))}
@@ -467,6 +572,14 @@ const EmailNotifications = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Popup animation keyframes */}
+            <style>{`
+                @keyframes popupIn {
+                    0% { opacity: 0; transform: scale(0.85) translateY(20px); }
+                    100% { opacity: 1; transform: scale(1) translateY(0); }
+                }
+            `}</style>
         </div>
     );
 };
