@@ -13,15 +13,21 @@ const { sendLowAttendanceWarning, EMAIL_ENABLED } = require('../utils/emailServi
 const ATTENDANCE_THRESHOLD = parseInt(process.env.ATTENDANCE_THRESHOLD) || 75;
 
 // ── Helper: calculate attendance for students in a class ────────────────────
+// Matches evaluationEngine.js logic: total = session count, attended = 'Present' only
+const Session = require('../models/Session');
+
 async function calcStudentAttendance(studentIds, classId) {
+    const sessions = await Session.find({ class: classId }).select('_id').lean();
+    const totalSessions = sessions.length;
+    const sessionIds = sessions.map(s => s._id);
+
     const results = [];
     for (const sid of studentIds) {
-        const total = await Attendance.countDocuments({ student: sid, class: classId });
-        const present = await Attendance.countDocuments({ student: sid, class: classId, status: 'Present' });
-        const late = await Attendance.countDocuments({ student: sid, class: classId, status: 'Late' });
-        const attended = present + late;
-        const percentage = total > 0 ? (attended / total) * 100 : 0;
-        results.push({ studentId: sid, totalClasses: total, classesAttended: attended, attendance: Math.round(percentage * 10) / 10 });
+        const presentCount = totalSessions > 0
+            ? await Attendance.countDocuments({ student: sid, session: { $in: sessionIds }, class: classId, status: 'Present' })
+            : 0;
+        const percentage = totalSessions > 0 ? (presentCount / totalSessions) * 100 : 100;
+        results.push({ studentId: sid, totalClasses: totalSessions, classesAttended: presentCount, attendance: Math.round(percentage * 10) / 10 });
     }
     return results;
 }
