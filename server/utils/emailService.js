@@ -121,4 +121,135 @@ const sendWelcomeEmail = async (email, name, tempPassword) => {
     }
 };
 
-module.exports = { sendWarningEmail, sendWelcomeEmail };
+/**
+ * Send low attendance warning email with professional HTML template
+ * Used by the teacher-triggered notification module
+ * 
+ * @param {Object} options
+ * @param {string} options.toEmail - Actual email address to deliver to
+ * @param {string} options.studentName - Student's full name
+ * @param {string} options.subject - Subject/course name
+ * @param {number} options.attendance - Current attendance percentage
+ * @param {number} options.classesAttended - Number of classes attended
+ * @param {number} options.totalClasses - Total number of classes
+ * @param {string} options.teacherName - Teacher's full name
+ * @param {string} options.teacherInstitutionalEmail - Teacher's institutional email for signature
+ * @param {string} options.studentInstitutionalEmail - Student's institutional email for display
+ * @returns {{ success: boolean, messageId?: string, error?: string }}
+ */
+const sendLowAttendanceWarning = async (options) => {
+    const {
+        toEmail,
+        studentName,
+        subject,
+        attendance,
+        classesAttended,
+        totalClasses,
+        teacherName,
+        teacherInstitutionalEmail,
+        studentInstitutionalEmail
+    } = options;
+
+    // Dynamic warning level
+    const isCritical = attendance < 50;
+    const isSerious = attendance < 65;
+    const accentColor = isCritical ? '#dc2626' : isSerious ? '#f97316' : '#f59e0b';
+    const accentGlow = isCritical ? 'rgba(220,38,38,0.3)' : isSerious ? 'rgba(249,115,22,0.3)' : 'rgba(245,158,11,0.3)';
+    const statusLabel = isCritical ? 'CRITICAL' : isSerious ? 'SERIOUS' : 'WARNING';
+    const statusEmoji = isCritical ? '🚨' : isSerious ? '⚠️' : '📢';
+
+    const html = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; max-width: 620px; margin: 0 auto; background: #0f172a; border-radius: 16px; overflow: hidden; border: 1px solid rgba(148,163,184,0.15);">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #6366f1 100%); padding: 32px 30px; text-align: center;">
+        <h1 style="margin: 0; color: #ffffff; font-size: 26px; font-weight: 800; letter-spacing: -0.5px;">📋 AttendEase</h1>
+        <p style="margin: 8px 0 0; color: rgba(255,255,255,0.8); font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase;">Low Attendance Warning</p>
+      </div>
+
+      <!-- Status Badge -->
+      <div style="text-align: center; padding: 24px 30px 0;">
+        <span style="display: inline-block; padding: 6px 20px; border-radius: 20px; font-size: 12px; font-weight: 800; letter-spacing: 1px; color: ${accentColor}; background: rgba(255,255,255,0.05); border: 1px solid ${accentColor}; box-shadow: 0 0 15px ${accentGlow};">
+          ${statusEmoji} ${statusLabel}
+        </span>
+      </div>
+
+      <!-- Body -->
+      <div style="padding: 28px 30px;">
+        <p style="font-size: 16px; color: #e2e8f0; line-height: 1.6; margin: 0 0 20px;">
+          Dear <strong style="color: #ffffff;">${studentName}</strong>,
+        </p>
+
+        <p style="font-size: 14px; color: #94a3b8; line-height: 1.7; margin: 0 0 24px;">
+          Your attendance in <strong style="color: #e2e8f0;">${subject}</strong> has fallen below the required <strong style="color: #e2e8f0;">75%</strong> threshold.
+        </p>
+
+        <!-- Stats Card -->
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(148,163,184,0.15); border-radius: 12px; padding: 20px 24px; margin: 0 0 24px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 10px 0; color: #64748b; font-size: 13px; border-bottom: 1px solid rgba(148,163,184,0.1);">Subject</td>
+              <td style="padding: 10px 0; color: #e2e8f0; font-weight: 600; font-size: 14px; text-align: right; border-bottom: 1px solid rgba(148,163,184,0.1);">${subject}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; color: #64748b; font-size: 13px; border-bottom: 1px solid rgba(148,163,184,0.1);">Current Attendance</td>
+              <td style="padding: 10px 0; font-weight: 800; font-size: 18px; text-align: right; color: ${accentColor}; border-bottom: 1px solid rgba(148,163,184,0.1);">${attendance.toFixed(1)}%</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; color: #64748b; font-size: 13px; border-bottom: 1px solid rgba(148,163,184,0.1);">Classes Attended</td>
+              <td style="padding: 10px 0; color: #e2e8f0; font-weight: 600; font-size: 14px; text-align: right; border-bottom: 1px solid rgba(148,163,184,0.1);">${classesAttended} / ${totalClasses}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; color: #64748b; font-size: 13px;">Required Attendance</td>
+              <td style="padding: 10px 0; color: #22c55e; font-weight: 600; font-size: 14px; text-align: right;">75%</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Warning Message -->
+        <div style="background: rgba(245,158,11,0.08); border-left: 3px solid ${accentColor}; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 0 0 28px;">
+          <p style="margin: 0; font-size: 13px; color: #cbd5e1; line-height: 1.6;">
+            Please improve your attendance immediately to meet the academic requirements. Continued low attendance may result in academic penalties.
+          </p>
+        </div>
+
+        <!-- Signature -->
+        <div style="border-top: 1px solid rgba(148,163,184,0.1); padding-top: 20px; margin-top: 8px;">
+          <p style="margin: 0 0 4px; font-size: 14px; color: #e2e8f0;">Regards,</p>
+          <p style="margin: 0 0 2px; font-size: 15px; font-weight: 700; color: #ffffff;">${teacherName}</p>
+          <p style="margin: 0 0 2px; font-size: 13px; color: #94a3b8;">Faculty of ${subject}</p>
+          <p style="margin: 0; font-size: 12px; color: #64748b;">${teacherInstitutionalEmail}</p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="background: rgba(255,255,255,0.02); padding: 16px 30px; text-align: center; border-top: 1px solid rgba(148,163,184,0.08);">
+        <p style="margin: 0; font-size: 11px; color: #475569;">
+          This is an automated notification from <strong>AttendEase</strong> — Smart Attendance Management System
+        </p>
+      </div>
+    </div>
+  `;
+
+    if (!EMAIL_ENABLED) {
+        console.warn('[EMAIL] SMTP not configured — skipping send to', toEmail);
+        return { success: false, error: 'SMTP not configured' };
+    }
+
+    try {
+        const transport = getTransporter();
+        const result = await transport.sendMail({
+            from: `"${teacherName} via AttendEase" <${process.env.SMTP_USER}>`,
+            to: toEmail,
+            replyTo: teacherInstitutionalEmail,
+            subject: `${statusEmoji} Low Attendance Warning — ${subject}`,
+            html
+        });
+        return { success: true, messageId: result.messageId || result.response };
+    } catch (error) {
+        console.error('[EMAIL] Send failed to', toEmail, ':', error.message);
+        return { success: false, error: error.message };
+    }
+};
+
+module.exports = { sendWarningEmail, sendWelcomeEmail, sendLowAttendanceWarning, getTransporter, EMAIL_ENABLED };
+
