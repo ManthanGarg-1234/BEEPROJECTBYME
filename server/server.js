@@ -69,6 +69,29 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// SMTP debug (temporary — remove after debugging)
+app.get('/api/smtp-test', async (req, res) => {
+    const nodemailer = require('nodemailer');
+    const info = {
+        SMTP_USER: process.env.SMTP_USER ? process.env.SMTP_USER.slice(0, 6) + '***' : 'NOT SET',
+        SMTP_PASS: process.env.SMTP_PASS ? '****' + process.env.SMTP_PASS.slice(-4) : 'NOT SET',
+        SMTP_HOST: process.env.SMTP_HOST || 'NOT SET',
+        SMTP_PORT: process.env.SMTP_PORT || 'NOT SET'
+    };
+    try {
+        const t = nodemailer.createTransport({
+            host: process.env.SMTP_HOST || 'smtp.gmail.com',
+            port: parseInt(process.env.SMTP_PORT) || 587,
+            secure: false,
+            auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+        });
+        await t.verify();
+        res.json({ ...info, status: 'OK', message: 'SMTP connection successful' });
+    } catch (err) {
+        res.json({ ...info, status: 'FAILED', error: err.message });
+    }
+});
+
 // Serve uploaded files (profile photos etc.)
 const uploadsPath = path.join(__dirname, 'uploads');
 app.use('/uploads', express.static(uploadsPath));
