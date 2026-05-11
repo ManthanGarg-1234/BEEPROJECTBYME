@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import {
   LineChart,
   Line,
@@ -17,7 +17,7 @@ import {
   Area,
   AreaChart,
 } from 'recharts';
-import { TrendingUp, Calendar, Users, AlertCircle } from 'lucide-react';
+import { TrendingUp, Calendar, Users, AlertCircle, Loader, CheckCircle, Target } from 'lucide-react';
 
 const AdvancedAnalytics = () => {
   const [classId, setClassId] = useState('');
@@ -43,9 +43,7 @@ const AdvancedAnalytics = () => {
 
   const fetchClasses = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/classes', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
+      const response = await api.get('/classes/my-classes');
       setClasses(response.data.data || []);
     } catch (error) {
       console.error('Error fetching classes:', error);
@@ -55,9 +53,7 @@ const AdvancedAnalytics = () => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5000/api/analytics/class-overview/${classId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
+      const response = await api.get(`/analytics/class-overview/${classId}`);
 
       const data = response.data.data || {};
 
@@ -113,40 +109,40 @@ const AdvancedAnalytics = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 flex items-center gap-2">
-            <TrendingUp className="w-8 h-8" /> Advanced Analytics
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2 flex items-center gap-3">
+            <TrendingUp className="w-8 h-8 md:w-10 md:h-10 text-indigo-600" /> Advanced Analytics
           </h1>
-          <p className="text-gray-600 mt-2">Deep insights into attendance and performance</p>
+          <p className="text-gray-600 text-lg">Deep insights into attendance and performance</p>
         </div>
 
         {/* Controls */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-8 border-t-4 border-blue-500">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Class</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Select Class</label>
               <select
                 value={classId}
                 onChange={(e) => setClassId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
               >
                 <option value="">Choose a class</option>
                 {classes.map((c) => (
                   <option key={c._id} value={c._id}>
-                    {c.name}
+                    {c.classId} - {c.subject}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Time Range</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Time Range</label>
               <select
                 value={timeRange}
                 onChange={(e) => setTimeRange(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
               >
                 <option value="week">Last 7 Days</option>
                 <option value="month">Last 30 Days</option>
@@ -159,35 +155,50 @@ const AdvancedAnalytics = () => {
         {classId && (
           <>
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <p className="text-gray-600 text-sm">Total Students</p>
-                <p className="text-3xl font-bold text-indigo-600 mt-2">{stats.totalStudents}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl shadow-lg p-6 border border-indigo-200">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-gray-700 text-sm font-semibold uppercase">Total Students</p>
+                  <Users className="w-6 h-6 text-indigo-600" />
+                </div>
+                <p className="text-4xl font-bold text-indigo-600">{stats.totalStudents}</p>
               </div>
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <p className="text-gray-600 text-sm">Avg Attendance</p>
-                <p className="text-3xl font-bold text-green-600 mt-2">{stats.avgAttendance}%</p>
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-lg p-6 border border-green-200">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-gray-700 text-sm font-semibold uppercase">Avg Attendance</p>
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <p className="text-4xl font-bold text-green-600">{stats.avgAttendance}%</p>
               </div>
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <p className="text-gray-600 text-sm">High Attendance</p>
-                <p className="text-3xl font-bold text-blue-600 mt-2">{stats.highAttendance}</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg p-6 border border-blue-200">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-gray-700 text-sm font-semibold uppercase">Engaged</p>
+                  <Target className="w-6 h-6 text-blue-600" />
+                </div>
+                <p className="text-4xl font-bold text-blue-600">{stats.highAttendance}</p>
               </div>
-              <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
-                <p className="text-gray-600 text-sm flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-600" /> At Risk
-                </p>
-                <p className="text-3xl font-bold text-red-600 mt-2">{stats.lowAttendance}</p>
+              <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl shadow-lg p-6 border border-red-200">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-gray-700 text-sm font-semibold uppercase">At Risk</p>
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <p className="text-4xl font-bold text-red-600">{stats.lowAttendance}</p>
               </div>
             </div>
 
             {/* Charts */}
             {loading ? (
-              <p className="text-gray-600 text-center py-12">Loading analytics...</p>
+              <div className="flex items-center justify-center py-16 bg-white rounded-xl shadow-lg">
+                <Loader className="w-10 h-10 text-indigo-600 animate-spin" />
+                <span className="ml-4 text-gray-600 text-lg">Loading analytics...</span>
+              </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 {/* Attendance Trend */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-semibold text-gray-800 mb-4">Attendance Trend</h2>
+                <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-l-4 border-indigo-500">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <TrendingUp className="w-6 h-6 text-indigo-600" /> Attendance Trend
+                  </h2>
                   {trendData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                       <AreaChart data={trendData}>
@@ -197,21 +208,37 @@ const AdvancedAnalytics = () => {
                             <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis />
-                        <Tooltip />
-                        <Area type="monotone" dataKey="attendance" stroke="#6366f1" fillOpacity={1} fill="url(#colorAttendance)" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis dataKey="date" stroke="#9ca3af" />
+                        <YAxis stroke="#9ca3af" />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#fff',
+                            border: '2px solid #6366f1',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="attendance"
+                          stroke="#6366f1"
+                          strokeWidth={3}
+                          fillOpacity={1}
+                          fill="url(#colorAttendance)"
+                        />
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-gray-600">No data available</p>
+                    <div className="text-center py-12">
+                      <p className="text-gray-600">No data available for this period</p>
+                    </div>
                   )}
                 </div>
 
                 {/* Attendance Distribution */}
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-xl font-semibold text-gray-800 mb-4">Attendance Distribution</h2>
+                <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-l-4 border-indigo-500">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-6">Attendance Distribution</h2>
                   {attendanceData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
@@ -229,60 +256,73 @@ const AdvancedAnalytics = () => {
                             <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#fff',
+                            border: '2px solid #6366f1',
+                            borderRadius: '8px',
+                          }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <p className="text-gray-600">No data available</p>
+                    <div className="text-center py-12">
+                      <p className="text-gray-600">No data available</p>
+                    </div>
                   )}
                 </div>
               </div>
             )}
 
             {/* Performance Insights */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Performance Insights</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-3">Recommendations</h3>
-                  <ul className="space-y-2 text-sm text-gray-600">
-                    <li className="flex items-start gap-2">
-                      <span className="text-indigo-600 font-bold mt-0.5">•</span>
-                      <span>Focus on low-attendance students to improve overall metrics</span>
+            <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-l-4 border-indigo-500">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">Performance Insights & Recommendations</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-6 border border-indigo-200">
+                  <h3 className="font-bold text-gray-800 mb-4 text-lg flex items-center gap-2">
+                    <Target className="w-5 h-5 text-indigo-600" />
+                    Key Recommendations
+                  </h3>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <span className="text-indigo-600 font-bold text-xl mt-0.5">→</span>
+                      <span className="text-gray-700">Focus on low-attendance students to improve overall metrics and class performance</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-indigo-600 font-bold mt-0.5">•</span>
-                      <span>Consider leave approval strategies for better retention</span>
+                    <li className="flex items-start gap-3">
+                      <span className="text-indigo-600 font-bold text-xl mt-0.5">→</span>
+                      <span className="text-gray-700">Review and approve leave requests strategically for better retention</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-indigo-600 font-bold mt-0.5">•</span>
-                      <span>Monitor suspicious activities to maintain system integrity</span>
+                    <li className="flex items-start gap-3">
+                      <span className="text-indigo-600 font-bold text-xl mt-0.5">→</span>
+                      <span className="text-gray-700">Monitor suspicious activities to maintain system integrity and fairness</span>
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-indigo-600 font-bold mt-0.5">•</span>
-                      <span>Review feedback regularly to improve class quality</span>
+                    <li className="flex items-start gap-3">
+                      <span className="text-indigo-600 font-bold text-xl mt-0.5">→</span>
+                      <span className="text-gray-700">Review feedback regularly to identify and improve weak areas in your teaching</span>
                     </li>
                   </ul>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-3">Quick Stats</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
-                      <span className="text-gray-700">Attendance Effectiveness</span>
-                      <span className="font-bold text-indigo-600">{stats.avgAttendance}%</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                      <span className="text-gray-700">Students Engaged</span>
-                      <span className="font-bold text-green-600">{stats.highAttendance}/{stats.totalStudents}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                      <span className="text-gray-700">Need Intervention</span>
-                      <span className="font-bold text-red-600">{stats.lowAttendance}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                      <span className="text-gray-700">Time Range</span>
-                      <span className="font-bold text-orange-600">{getDaysInRange()} days</span>
-                    </div>
+
+                <div className="space-y-3">
+                  <h3 className="font-bold text-gray-800 mb-4 text-lg flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    Quick Statistics
+                  </h3>
+                  <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-lg border border-indigo-200 hover:shadow-md transition">
+                    <span className="text-gray-700 font-semibold">Attendance Rate</span>
+                    <span className="font-bold text-indigo-600 text-lg">{stats.avgAttendance}%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200 hover:shadow-md transition">
+                    <span className="text-gray-700 font-semibold">Students Engaged</span>
+                    <span className="font-bold text-green-600 text-lg">{stats.highAttendance}/{stats.totalStudents}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200 hover:shadow-md transition">
+                    <span className="text-gray-700 font-semibold">Need Intervention</span>
+                    <span className="font-bold text-red-600 text-lg">{stats.lowAttendance}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 hover:shadow-md transition">
+                    <span className="text-gray-700 font-semibold">Time Range</span>
+                    <span className="font-bold text-orange-600 text-lg">{getDaysInRange()} days</span>
                   </div>
                 </div>
               </div>
