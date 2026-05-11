@@ -2,25 +2,26 @@ const mongoose = require('mongoose');
 
 const leaveSchema = new mongoose.Schema(
   {
-    studentId: {
+    student: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: [true, 'Student is required'],
     },
-    classId: {
+    class: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Class',
-      required: true,
+      required: [true, 'Class is required'],
     },
-    sessionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Session',
-      required: true,
+    leaveType: {
+      type: String,
+      enum: ['medical', 'personal', 'emergency', 'event', 'other'],
+      required: [true, 'Leave type is required'],
     },
     reason: {
       type: String,
-      required: true,
+      required: [true, 'Reason is required'],
       trim: true,
+      maxlength: 500,
     },
     status: {
       type: String,
@@ -29,17 +30,21 @@ const leaveSchema = new mongoose.Schema(
     },
     startDate: {
       type: Date,
-      required: true,
+      required: [true, 'Start date is required'],
     },
     endDate: {
       type: Date,
-      required: true,
+      required: [true, 'End date is required'],
     },
     numberOfDays: {
       type: Number,
-      required: true,
+      default: 1,
     },
     attachmentUrl: {
+      type: String,
+      default: null,
+    },
+    attachmentName: {
       type: String,
       default: null,
     },
@@ -51,14 +56,11 @@ const leaveSchema = new mongoose.Schema(
     approvalNotes: {
       type: String,
       default: null,
+      maxlength: 500,
     },
     approvalDate: {
       type: Date,
       default: null,
-    },
-    leaveBalance: {
-      type: Number,
-      default: 0,
     },
   },
   { timestamps: true }
@@ -76,8 +78,10 @@ leaveSchema.pre('save', function (next) {
 });
 
 // Index for faster queries
-leaveSchema.index({ studentId: 1, status: 1 });
-leaveSchema.index({ classId: 1, status: 1 });
-leaveSchema.index({ startDate: 1, endDate: 1 });
+leaveSchema.index({ student: 1, status: 1 });
+leaveSchema.index({ class: 1, status: 1 });
+leaveSchema.index({ student: 1, class: 1 });
+leaveSchema.index({ startDate: -1, endDate: -1 });
+leaveSchema.index({ approvedBy: 1 });
 
 module.exports = mongoose.model('Leave', leaveSchema);
