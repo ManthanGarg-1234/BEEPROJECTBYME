@@ -66,46 +66,96 @@ const AdvancedAnalytics = () => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/analytics/class-overview/${classId}`);
+      // Fetch class insights
+      const insightsRes = await api.get(`/analytics/advanced/class/${classId}`);
+      const insights = insightsRes.data || {};
 
-      const data = response.data.data || {};
+      // Fetch daily trends
+      const dailyRes = await api.get(`/analytics/daily-chart/${classId}`);
+      const dailyData = dailyRes.data || [];
 
       // Process attendance trends
-      if (data.dailyTrends) {
-        setTrendData(data.dailyTrends);
+      if (dailyData.length > 0) {
+        const days = getDaysInRange();
+        const filteredDaily = dailyData.slice(-days);
+        
+        const trendData = filteredDaily.map(d => ({
+          date: d.date,
+          attendance: d.percentage
+        }));
+        setTrendData(trendData);
+        
+        // Aggregate for pie chart
+        let present = 0, absent = 0, late = 0;
+        filteredDaily.forEach(d => {
+           present += d.present || 0;
+           absent += d.absent || 0;
+           late += d.late || 0;
+        });
+        
+        setAttendanceData([
+          { name: 'Present', value: present, color: '#10b981' },
+          { name: 'Absent', value: absent, color: '#ef4444' },
+          { name: 'Late', value: late, color: '#f59e0b' },
+        ]);
+      } else {
+        setTrendData([]);
+        setAttendanceData([]);
       }
 
-      // Calculate statistics
-      const totalStudents = data.totalStudents || 0;
-      const avgAttendance = data.averageAttendance || 0;
-      const lowAttendance = data.lowAttendanceStudents || 0;
+      // Calculate statistics from insights
+      const riskDist = insights.riskDistribution || {};
+      const lowAttendance = (riskDist.critical || 0) + (riskDist.high || 0);
+      const highAttendance = (riskDist.medium || 0) + (riskDist.low || 0);
 
       setStats({
-        totalStudents,
-        avgAttendance: avgAttendance.toFixed(1),
+        totalStudents: insights.totalStudents || 0,
+        avgAttendance: insights.avgAttendance?.toFixed(1) || '0.0',
         lowAttendance,
-        highAttendance: totalStudents - lowAttendance,
+        highAttendance,
+        healthScore: insights.healthScore || 0,
+        minAttendance: insights.minAttendance || 0,
+        maxAttendance: insights.maxAttendance || 0,
       });
 
-      // Process attendance by student (pie chart)
-      if (data.studentStats) {
-        const pieData = [
-          { name: 'Present', value: data.studentStats.present || 0, color: '#10b981' },
-          { name: 'Absent', value: data.studentStats.absent || 0, color: '#ef4444' },
-          { name: 'Late', value: data.studentStats.late || 0, color: '#f59e0b' },
-        ];
-        setAttendanceData(pieData);
-      }
-
-      // Process marks distribution
-      if (data.marksDistribution) {
-        setMarksData(data.marksDistribution);
-      }
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      setTrendData([]);
+      setAttendanceData([]);
+      setStats({});
     } finally {
       setLoading(false);
     }
+  };
+
+  const getDynamicRecommendations = () => {
+    const recs = [];
+    if (!stats.totalStudents) {
+      return ['No data available to generate recommendations.'];
+    }
+
+    const avg = parseFloat(stats.avgAttendance);
+    if (avg < 75) {
+      recs.push(`Alert: Class average is low (${avg}%). Consider scheduling a review session or sending bulk warnings.`);
+    } else if (avg > 90) {
+      recs.push(`Excellent: Class average is exceptional (${avg}%). Keep up the good work!`);
+    } else {
+      recs.push(`Good: Class average is healthy (${avg}%).`);
+    }
+
+    if (stats.lowAttendance > 0) {
+      recs.push(`Action Required: ${stats.lowAttendance} student(s) are at high risk (below 75%). Use the dashboard to intervene.`);
+    }
+
+    if (stats.minAttendance < 50) {
+      recs.push(`Warning: Lowest attendance in class is ${stats.minAttendance}%. Individual counseling recommended.`);
+    }
+
+    if (recs.length < 4) {
+      recs.push('Review feedback regularly to identify and improve weak areas in your teaching.');
+    }
+
+    return recs;
   };
 
   const getDaysInRange = () => {
@@ -292,7 +342,7 @@ const AdvancedAnalytics = () => {
                     Key Recommendations
                   </h3>
                   <ul className="space-y-3">
-                    {['Focus on low-attendance students to improve overall metrics and class performance','Review and approve leave requests strategically for better retention','Monitor suspicious activities to maintain system integrity and fairness','Review feedback regularly to identify and improve weak areas in your teaching'].map((tip, i) => (
+                    {getDynamicRecommendations().map((tip, i) => (
                       <li key={i} className="flex items-start gap-3">
                         <span className={`font-bold text-xl mt-0.5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>→</span>
                         <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{tip}</span>
