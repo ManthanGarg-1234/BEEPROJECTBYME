@@ -32,11 +32,11 @@ const Navbar = () => {
         { to: '/teacher/session', label: '🎯 Session' },
         { to: '/teacher/manual-attendance', label: '✏️ Manual' },
         { to: '/teacher/marks', label: '📋 Marks' },
-        { to: '/teacher/email', label: '✉️ Email' },
+
         { to: '/teacher/leave-approval', label: '📅 Leaves' },
         { to: '/teacher/feedback', label: '⭐ Feedback' },
         { to: '/teacher/suspicious-activities', label: '🚨 Suspicious' },
-        { to: '/teacher/advanced-analytics', label: '📊 Analytics' },
+
         { to: '/teacher/reports', label: '📈 Reports' },
     ];
 

@@ -376,10 +376,16 @@ const LeaveApproval = () => {
                       : 'bg-green-50 border-green-200'}`}>
                       <CheckCircle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${darkMode ? 'text-green-400' : 'text-green-600'}`} />
                       <div className="flex-1 min-w-0">
-                        <p className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{leave.student?.name}</p>
+                        <p className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{leave.student?.name} <span className="text-xs font-normal opacity-70 ml-1">({leaveTypeLabels[leave.leaveType] || leave.leaveType})</span></p>
                         <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {leave.numberOfDays} days • {new Date(leave.startDate).toLocaleDateString('en-IN')}
+                          {leave.numberOfDays} days • {new Date(leave.startDate).toLocaleDateString('en-IN')} to {new Date(leave.endDate).toLocaleDateString('en-IN')}
                         </p>
+                        {(leave.reason || leave.approvalNotes) && (
+                          <div className={`mt-2 p-2 rounded text-xs ${darkMode ? 'bg-green-900/40 text-green-300' : 'bg-white/60 text-gray-600'}`}>
+                            {leave.reason && <p><span className="font-semibold">Reason:</span> {leave.reason}</p>}
+                            {leave.approvalNotes && <p className="mt-1"><span className="font-semibold">Note:</span> {leave.approvalNotes}</p>}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -404,10 +410,16 @@ const LeaveApproval = () => {
                       : 'bg-red-50 border-red-200'}`}>
                       <XCircle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
                       <div className="flex-1 min-w-0">
-                        <p className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{leave.student?.name}</p>
+                        <p className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>{leave.student?.name} <span className="text-xs font-normal opacity-70 ml-1">({leaveTypeLabels[leave.leaveType] || leave.leaveType})</span></p>
                         <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {leave.numberOfDays} days • {new Date(leave.startDate).toLocaleDateString('en-IN')}
+                          {leave.numberOfDays} days • {new Date(leave.startDate).toLocaleDateString('en-IN')} to {new Date(leave.endDate).toLocaleDateString('en-IN')}
                         </p>
+                        {(leave.reason || leave.approvalNotes) && (
+                          <div className={`mt-2 p-2 rounded text-xs ${darkMode ? 'bg-red-900/40 text-red-300' : 'bg-white/60 text-gray-600'}`}>
+                            {leave.reason && <p><span className="font-semibold">Reason:</span> {leave.reason}</p>}
+                            {leave.approvalNotes && <p className="mt-1"><span className="font-semibold">Note:</span> {leave.approvalNotes}</p>}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -237,7 +237,7 @@ router.get('/balance/:studentId', auth, async (req, res) => {
 
     const approvedLeaves = await Leave.find({
       student: studentId,
-      status: 'approved',
+      status: { $in: ['approved', 'pending'] },
       endDate: { $gte: new Date(new Date().getFullYear(), 0, 1) } // Current academic year
     });
 

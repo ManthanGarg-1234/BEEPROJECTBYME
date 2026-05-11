@@ -124,22 +124,7 @@ const AttendanceReport = () => {
         })();
     }, [selectedId]);
 
-    // ── Load advanced analytics when tab changes or class changes ───────────
-    useEffect(() => {
-        if (activeTab !== 'advanced' || !selectedId) return;
-        (async () => {
-            setAdvancedLoading(true);
-            try {
-                const res = await api.get(`/analytics/advanced/student/${selectedId}`);
-                setAdvancedAnalytics(res.data);
-            } catch (err) {
-                console.error('Failed to load advanced analytics:', err);
-                setAdvancedAnalytics(null);
-            } finally {
-                setAdvancedLoading(false);
-            }
-        })();
-    }, [activeTab, selectedId]);
+
 
     const selectedClass = useMemo(() => classes.find(c => c.classId === selectedId), [classes, selectedId]);
 

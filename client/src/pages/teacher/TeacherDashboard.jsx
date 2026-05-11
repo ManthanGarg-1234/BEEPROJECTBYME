@@ -11,7 +11,6 @@ const TeacherDashboard = () => {
     const [stats, setStats] = useState(null);
     const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [sendingEmail, setSendingEmail] = useState({});
     const [bulkSending, setBulkSending] = useState(false);
     const [toast, setToast] = useState(null);
     const navigate = useNavigate();
@@ -26,11 +25,10 @@ const TeacherDashboard = () => {
         { label: 'Session', path: '/teacher/session', icon: '🎯' },
         { label: 'Manual Attendance', path: '/teacher/manual-attendance', icon: '✏️' },
         { label: 'Marks', path: '/teacher/marks', icon: '📋' },
-        { label: 'Email Notify', path: '/teacher/email', icon: '✉️' },
+
         { label: 'Leave Approval', path: '/teacher/leave-approval', icon: '📅' },
         { label: 'Feedback', path: '/teacher/feedback', icon: '⭐' },
         { label: 'Suspicious', path: '/teacher/suspicious-activities', icon: '🚨' },
-        { label: 'Analytics', path: '/teacher/advanced-analytics', icon: '📊' },
         { label: 'Reports', path: '/teacher/reports', icon: '📈' },
     ];
 
@@ -102,38 +100,7 @@ const TeacherDashboard = () => {
         setTimeout(() => setToast(null), 4000);
     };
 
-    const sendWarningEmail = async (studentId) => {
-        setSendingEmail(prev => ({ ...prev, [studentId]: true }));
-        try {
-            const res = await api.post('/analytics/send-warning-email', { studentId, classId: selectedClass });
-            // Update lastWarningSentAt in local state
-            setStats(prev => prev ? {
-                ...prev,
-                studentStats: prev.studentStats.map(s =>
-                    s._id === studentId ? { ...s, lastWarningSentAt: new Date().toISOString() } : s
-                )
-            } : prev);
-            showToast('success', res.data.message || 'Warning email sent!');
-        } catch (err) {
-            showToast('error', err.response?.data?.message || 'Failed to send email');
-        } finally {
-            setSendingEmail(prev => ({ ...prev, [studentId]: false }));
-        }
-    };
 
-    const sendBulkWarnings = async () => {
-        setBulkSending(true);
-        try {
-            const res = await api.post('/analytics/send-bulk-warnings', { classId: selectedClass });
-            // Refresh stats to update lastWarningSentAt badges
-            await fetchDashboard(selectedClass);
-            showToast('success', res.data.message);
-        } catch (err) {
-            showToast('error', err.response?.data?.message || 'Bulk send failed');
-        } finally {
-            setBulkSending(false);
-        }
-    };
 
     if (loading) {
         return (
@@ -540,20 +507,7 @@ const TeacherDashboard = () => {
                                             Student-wise Summary
                                         </h3>
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            {/* Bulk warn button */}
-                                            {stats.belowThresholdCount > 0 && (
-                                                <button
-                                                    onClick={sendBulkWarnings}
-                                                    disabled={bulkSending}
-                                                    className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-rose-500 text-white text-xs px-4 py-2 rounded-xl font-semibold shadow-md shadow-rose-500/20 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-                                                >
-                                                    {bulkSending ? (
-                                                        <><span className="inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending...</>
-                                                    ) : (
-                                                        <>📨 Warn All Below 75% ({stats.belowThresholdCount})</>
-                                                    )}
-                                                </button>
-                                            )}
+
                                             <button
                                                 onClick={() => navigate('/teacher/reports')}
                                                 className="bg-gradient-to-r from-violet-500 to-purple-500 text-white text-sm px-5 py-2 rounded-xl font-semibold shadow-md shadow-purple-500/20 transition-shadow duration-200 flex items-center gap-1.5"
@@ -575,7 +529,6 @@ const TeacherDashboard = () => {
                                                     <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Total</th>
                                                     <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">%</th>
                                                     <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Status</th>
-                                                    <th className="text-center py-3.5 px-3 text-violet-600 dark:text-violet-400 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-100 dark:divide-dark-700">
@@ -618,23 +571,7 @@ const TeacherDashboard = () => {
                                                                 </span>
                                                             )}
                                                         </td>
-                                                        <td className="py-3.5 px-4 text-center">
-                                                            {s.warningLevel ? (
-                                                                <button
-                                                                    onClick={() => sendWarningEmail(s._id)}
-                                                                    disabled={!!sendingEmail[s._id]}
-                                                                    title={`Send attendance warning email to ${s.name}`}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 text-xs font-semibold hover:bg-orange-100 dark:hover:bg-orange-900/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                                >
-                                                                    {sendingEmail[s._id] ? (
-                                                                        <span className="inline-block w-3 h-3 border-2 border-orange-300 border-t-orange-600 rounded-full animate-spin" />
-                                                                    ) : '📧'}
-                                                                    Warn
-                                                                </button>
-                                                            ) : (
-                                                                <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>
-                                                            )}
-                                                        </td>
+
                                                     </tr>
                                                 ))}
                                             </tbody>

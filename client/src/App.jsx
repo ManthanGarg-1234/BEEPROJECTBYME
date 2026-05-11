@@ -20,7 +20,7 @@ const AttendanceReport = lazy(() => import('./pages/teacher/AttendanceReport'));
 const EvaluationPanel = lazy(() => import('./pages/teacher/EvaluationPanel'));
 const ManualAttendance = lazy(() => import('./pages/teacher/ManualAttendance'));
 const MarksManagement = lazy(() => import('./pages/teacher/MarksManagement'));
-const EmailNotifications = lazy(() => import('./pages/teacher/EmailNotifications'));
+
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
 const StudentAttendanceReport = lazy(() => import('./pages/student/AttendanceReport'));
 const Subjects = lazy(() => import('./pages/student/Subjects'));
@@ -31,7 +31,6 @@ const LeaveApproval = lazy(() => import('./pages/teacher/LeaveApproval'));
 const FeedbackAnalytics = lazy(() => import('./pages/teacher/FeedbackAnalytics'));
 const SuspiciousActivityMonitor = lazy(() => import('./pages/teacher/SuspiciousActivityMonitor'));
 const AuditLogViewer = lazy(() => import('./pages/teacher/AuditLogViewer'));
-const AdvancedAnalytics = lazy(() => import('./pages/teacher/AdvancedAnalytics'));
 
 function App() {
     const { loading, isAuthenticated, user } = useAuth();
@@ -115,9 +114,7 @@ function App() {
                         <Route path="/teacher/marks" element={
                             <ProtectedRoute role="teacher"><MarksManagement /></ProtectedRoute>
                         } />
-                        <Route path="/teacher/email" element={
-                            <ProtectedRoute role="teacher"><EmailNotifications /></ProtectedRoute>
-                        } />
+
                         <Route path="/teacher/leave-approval" element={
                             <ProtectedRoute role="teacher"><LeaveApproval /></ProtectedRoute>
                         } />
@@ -129,9 +126,6 @@ function App() {
                         } />
                         <Route path="/teacher/audit-log" element={
                             <ProtectedRoute role="teacher"><AuditLogViewer /></ProtectedRoute>
-                        } />
-                        <Route path="/teacher/advanced-analytics" element={
-                            <ProtectedRoute role="teacher"><AdvancedAnalytics /></ProtectedRoute>
                         } />
 
                         {/* Student Routes */}
