@@ -79,6 +79,30 @@ router.get('/enrolled', auth, authorize('student'), async (req, res) => {
     }
 });
 
+// @route   GET /api/classes/my-classes
+// @desc    Get classes for current user (student or teacher)
+// @access  Private
+router.get('/my-classes', auth, async (req, res) => {
+    try {
+        let classes;
+        if (req.user.role === 'teacher') {
+            classes = await Class.find({ teacher: req.user._id })
+                .populate('students', 'name email rollNumber')
+                .sort({ createdAt: -1 });
+        } else if (req.user.role === 'student') {
+            classes = await Class.find({ students: req.user._id })
+                .populate('teacher', 'name email')
+                .sort({ createdAt: -1 });
+        } else {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+        
+        res.json({ data: classes });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // @route   GET /api/classes/:id
 // @desc    Get class by ID
 // @access  Private
