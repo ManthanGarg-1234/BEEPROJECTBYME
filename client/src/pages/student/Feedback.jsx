@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Star, MessageSquare } from 'lucide-react';
+import api from '../../api';
+import { Star, MessageSquare, CheckCircle, AlertCircle, Loader, Send } from 'lucide-react';
 
 const FeedbackForm = () => {
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [classes, setClasses] = useState([]);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({
     classId: '',
     rating: 5,
-    category: 'overall',
+    category: 'teaching',
+    title: '',
     comment: '',
-    isAnonymous: false,
+    isAnonymous: true,
   });
 
   useEffect(() => {
@@ -22,9 +26,7 @@ const FeedbackForm = () => {
 
   const fetchClasses = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/classes', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
+      const response = await api.get('/classes/my-classes');
       setClasses(response.data.data || []);
     } catch (error) {
       console.error('Error fetching classes:', error);
@@ -34,9 +36,7 @@ const FeedbackForm = () => {
   const fetchFeedback = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:5000/api/feedback/my-feedback', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
+      const response = await api.get('/feedback/my-feedback');
       setFeedback(response.data.data || []);
     } catch (error) {
       console.error('Error fetching feedback:', error);
@@ -47,23 +47,33 @@ const FeedbackForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
+    
+    if (!formData.classId) {
+      setError('Please select a class');
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      await axios.post('http://localhost:5000/api/feedback/submit', formData, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      alert('Feedback submitted successfully!');
+      await api.post('/feedback/submit', formData);
+      setSuccess('Feedback submitted successfully! Thank you for your input.');
       setShowForm(false);
       setFormData({
         classId: '',
         rating: 5,
-        category: 'overall',
+        category: 'teaching',
+        title: '',
         comment: '',
-        isAnonymous: false,
+        isAnonymous: true,
       });
-      fetchFeedback();
+      await fetchFeedback();
     } catch (error) {
-      alert('Error submitting feedback');
+      setError(error.response?.data?.message || 'Error submitting feedback');
       console.error(error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -73,80 +83,124 @@ const FeedbackForm = () => {
         {[1, 2, 3, 4, 5].map((i) => (
           <Star
             key={i}
-            className={`w-5 h-5 ${i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+            className={`w-4 h-4 ${i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
           />
         ))}
       </div>
     );
   };
 
+  const categoryLabels = {
+    teaching: 'Teaching Quality',
+    'class-material': 'Class Material',
+    pace: 'Pace & Difficulty',
+    engagement: 'Engagement',
+    overall: 'Overall'
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-800">Feedback & Ratings</h1>
-          <p className="text-gray-600 mt-2">Share your thoughts about classes and sessions</p>
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+            Feedback & Ratings
+          </h1>
+          <p className="text-gray-600 text-lg">Share your thoughts about classes and help us improve</p>
         </div>
 
         {/* New Feedback Button */}
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="mb-8 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2"
-        >
-          <MessageSquare className="w-5 h-5" /> New Feedback
-        </button>
+        <div className="mb-8">
+          <button
+            onClick={() => { setShowForm(!showForm); setError(''); setSuccess(''); }}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition font-semibold flex items-center gap-2"
+          >
+            <MessageSquare className="w-5 h-5" /> 
+            {showForm ? 'Cancel Feedback' : 'New Feedback'}
+          </button>
+        </div>
+
+        {/* Alert Messages */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>{error}</div>
+          </div>
+        )}
+        {success && (
+          <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>{success}</div>
+          </div>
+        )}
 
         {/* Feedback Form */}
         {showForm && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Share Your Feedback</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-8 border-l-4 border-indigo-500">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <Send className="w-6 h-6 text-indigo-600" />
+              Share Your Feedback
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Class Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Class / Session
-                  </label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase">Class *</label>
                   <select
                     value={formData.classId}
                     onChange={(e) => setFormData({ ...formData, classId: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
                   >
-                    <option value="">Select a class (optional)</option>
+                    <option value="">Select a class</option>
                     {classes.map((c) => (
                       <option key={c._id} value={c._id}>
-                        {c.name}
+                        {c.classId} - {c.subject}
                       </option>
                     ))}
                   </select>
                 </div>
+
+                {/* Category */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase">Category *</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
                   >
-                    <option value="overall">Overall Experience</option>
-                    <option value="class">Class Quality</option>
-                    <option value="teacher">Teacher</option>
-                    <option value="material">Material & Resources</option>
+                    {Object.entries(categoryLabels).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-3">Rating</label>
-                <div className="flex gap-2">
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase">Title *</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  maxLength="100"
+                  placeholder="Brief title for your feedback..."
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
+                />
+              </div>
+
+              {/* Rating */}
+              <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-6 border border-yellow-200">
+                <label className="block text-sm font-semibold text-gray-700 mb-4 uppercase">Rating *</label>
+                <div className="flex gap-3 mb-4">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <button
                       key={i}
                       type="button"
                       onClick={() => setFormData({ ...formData, rating: i })}
-                      className="focus:outline-none"
+                      className="focus:outline-none transition transform hover:scale-110"
                     >
                       <Star
-                        className={`w-8 h-8 cursor-pointer transition ${
+                        className={`w-10 h-10 cursor-pointer transition ${
                           i <= formData.rating
                             ? 'fill-yellow-400 text-yellow-400'
                             : 'text-gray-300 hover:text-yellow-300'
@@ -155,72 +209,119 @@ const FeedbackForm = () => {
                     </button>
                   ))}
                 </div>
-                <p className="text-gray-600 text-sm mt-2">{formData.rating} out of 5 stars</p>
+                <p className="text-sm font-semibold text-gray-700">
+                  {formData.rating === 5 && '⭐ Excellent!'}
+                  {formData.rating === 4 && '⭐ Very Good'}
+                  {formData.rating === 3 && '⭐ Good'}
+                  {formData.rating === 2 && '⭐ Fair'}
+                  {formData.rating === 1 && '⭐ Poor'}
+                </p>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Comments (optional)
-                </label>
+              {/* Comments */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2 uppercase">Comments</label>
                 <textarea
                   value={formData.comment}
                   onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-                  rows="4"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                  placeholder="Share your thoughts..."
+                  rows="5"
+                  maxLength="500"
+                  placeholder="Share your detailed thoughts and suggestions..."
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition resize-none"
                 ></textarea>
+                <p className="text-xs text-gray-500 mt-1">{formData.comment.length}/500 characters</p>
               </div>
 
-              <div className="mb-6 flex items-center gap-2">
+              {/* Anonymous Checkbox */}
+              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <input
                   type="checkbox"
+                  id="anonymous"
                   checked={formData.isAnonymous}
                   onChange={(e) => setFormData({ ...formData, isAnonymous: e.target.checked })}
-                  className="w-4 h-4 cursor-pointer"
+                  className="w-5 h-5 cursor-pointer accent-indigo-600"
                 />
-                <label className="text-sm text-gray-700 cursor-pointer">Submit as anonymous</label>
+                <label htmlFor="anonymous" className="text-sm text-gray-700 cursor-pointer font-medium">
+                  Submit as anonymous (your name won't be shown)
+                </label>
               </div>
 
+              {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold"
+                disabled={submitting}
+                className="w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold flex items-center justify-center gap-2"
               >
-                Submit Feedback
+                {submitting ? (
+                  <>
+                    <Loader className="w-5 h-5 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5" />
+                    Submit Feedback
+                  </>
+                )}
               </button>
             </form>
           </div>
         )}
 
         {/* My Feedback List */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">Your Feedback History</h2>
+        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-l-4 border-indigo-500">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <MessageSquare className="w-6 h-6 text-indigo-600" />
+            Your Feedback History ({feedback.length})
+          </h2>
           {loading ? (
-            <p className="text-gray-600">Loading...</p>
+            <div className="flex items-center justify-center py-12">
+              <Loader className="w-8 h-8 text-indigo-600 animate-spin" />
+              <span className="ml-3 text-gray-600">Loading feedback...</span>
+            </div>
           ) : feedback.length === 0 ? (
-            <p className="text-gray-600">No feedback submitted yet</p>
+            <div className="text-center py-12">
+              <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-600 text-lg">No feedback submitted yet</p>
+              <p className="text-gray-500">Start by sharing feedback about your classes</p>
+            </div>
           ) : (
             <div className="space-y-4">
               {feedback.map((item) => (
-                <div key={item._id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-semibold text-gray-800">
-                        {item.classId?.name || 'General Feedback'}
+                <div
+                  key={item._id}
+                  className="border-2 border-gray-200 rounded-lg p-5 hover:shadow-lg hover:border-indigo-300 transition bg-gradient-to-r from-gray-50 to-transparent"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <p className="font-bold text-gray-800">{item.title}</p>
+                      <p className="text-xs text-gray-500 mt-1 uppercase font-semibold">
+                        {categoryLabels[item.category]} • {item.class?.classId} - {item.class?.subject}
                       </p>
-                      <p className="text-sm text-gray-600 capitalize">{item.category}</p>
                     </div>
-                    {renderStars(item.rating)}
+                    <div>{renderStars(item.rating)}</div>
                   </div>
+
                   {item.comment && (
-                    <p className="text-gray-700 mt-3 p-3 bg-gray-50 rounded">{item.comment}</p>
+                    <p className="text-gray-700 mt-3 p-3 bg-white rounded border border-gray-200">
+                      {item.comment}
+                    </p>
                   )}
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-xs text-gray-500">
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </span>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      {item.isAnonymous ? 'Anonymous' : 'Named'}
-                    </span>
+
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">
+                        {new Date(item.createdAt).toLocaleDateString('en-IN')}
+                      </span>
+                      {item.isAnonymous && (
+                        <span className="inline-flex items-center text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold border border-blue-200">
+                          👤 Anonymous
+                        </span>
+                      )}
+                    </div>
+                    <div className="inline-flex items-center gap-2 text-xs px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full border border-indigo-200 font-semibold">
+                      ✓ Submitted
+                    </div>
                   </div>
                 </div>
               ))}
