@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { AlertCircle, CheckCircle, Clock, Calendar, MapPin, FileText, Loader } from 'lucide-react';
 
 const LeaveRequest = () => {
   const { darkMode } = useTheme();
+  const { user } = useAuth();
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -20,10 +22,7 @@ const LeaveRequest = () => {
     endDate: '',
   });
   const [enrolledClasses, setEnrolledClasses] = useState([]);
-  const [leaveBalance, setLeaveBalance] = useState({ balance: 0, totalUsed: 0, maxAllowed: 30 });
-
-  const token = localStorage.getItem('token');
-  const userId = localStorage.getItem('userId');
+  const [leaveBalance, setLeaveBalance] = useState({ balance: 30, totalUsed: 0, maxAllowed: 30 });
 
   useEffect(() => {
     fetchAllData();
@@ -51,7 +50,7 @@ const LeaveRequest = () => {
       setEnrolledClasses(classesData);
       
       // Extract unique groups
-      const groups = [...new Set(classesData.map(c => c.classId.split('-')[0]))].sort();
+      const groups = [...new Set(classesData.map(c => c.classId?.split('-')[0] || ''))].filter(Boolean).sort();
       if (groups.length > 0) {
         setSelectedGroup(groups[0]);
       }
@@ -71,10 +70,16 @@ const LeaveRequest = () => {
 
   const fetchLeaveBalance = async () => {
     try {
-      const response = await api.get(`/leave/balance/${userId}`);
-      setLeaveBalance(response.data.data);
+      // Use user._id from AuthContext — localStorage 'userId' key does not exist
+      const id = user?._id;
+      if (!id) return;
+      const response = await api.get(`/leave/balance/${id}`);
+      if (response.data?.data) {
+        setLeaveBalance(response.data.data);
+      }
     } catch (error) {
       console.error('Error fetching balance:', error);
+      // Don't block submission — just show default balance
     }
   };
 
@@ -99,13 +104,13 @@ const LeaveRequest = () => {
     setSuccess('');
 
     const days = calculateDays();
-    if (days > leaveBalance.balance) {
-      setError(`Insufficient leave balance. You have ${leaveBalance.balance} days remaining.`);
+    if (days <= 0) {
+      setError('Invalid date range: end date must be on or after start date');
       return;
     }
 
-    if (days <= 0) {
-      setError('Invalid date range');
+    if (!formData.classId) {
+      setError('Please select a class');
       return;
     }
 
@@ -154,12 +159,12 @@ const LeaveRequest = () => {
   };
 
   const getGroupsFromClasses = () => {
-    return [...new Set(enrolledClasses.map(c => c.classId.split('-')[0]))].sort();
+    return [...new Set(enrolledClasses.map(c => c.classId?.split('-')[0] || ''))].filter(Boolean).sort();
   };
 
   const getFilteredClasses = () => {
     if (!selectedGroup) return enrolledClasses;
-    return enrolledClasses.filter(c => c.classId.startsWith(selectedGroup));
+    return enrolledClasses.filter(c => c.classId?.startsWith(selectedGroup));
   };
 
   const groups = getGroupsFromClasses();

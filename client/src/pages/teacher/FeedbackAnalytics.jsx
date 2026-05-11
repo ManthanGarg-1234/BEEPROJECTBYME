@@ -11,6 +11,7 @@ const FeedbackAnalytics = () => {
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
   const [classesError, setClassesError] = useState('');
+  const [feedbackError, setFeedbackError] = useState('');
 
   useEffect(() => {
     fetchClasses();
@@ -39,6 +40,7 @@ const FeedbackAnalytics = () => {
 
   const fetchFeedback = async () => {
     setLoading(true);
+    setFeedbackError('');
     try {
       const response = await api.get(`/feedback/class/${classId}`);
       setFeedback(response.data.data || []);
@@ -47,6 +49,10 @@ const FeedbackAnalytics = () => {
       }
     } catch (error) {
       console.error('Error fetching feedback:', error);
+      const msg = error.response?.data?.message || 'Failed to load feedback';
+      setFeedbackError(msg);
+      setFeedback([]);
+      setStats({});
     } finally {
       setLoading(false);
     }
@@ -73,8 +79,7 @@ const FeedbackAnalytics = () => {
     if (avg >= 3) return 'from-yellow-50 to-yellow-100 border-yellow-200 text-yellow-700';
     return 'from-red-50 to-red-100 border-red-200 text-red-700';
   };
-
-  const avgRating = stats.avgRating || 0;
+  const avgRating = parseFloat(stats.avgRating) || 0;
 
   // Format class label: "G18-BE - Backend Engineering" → "Group G18 · Backend Engineering"
   const formatClassLabel = (c) => {
@@ -126,6 +131,13 @@ const FeedbackAnalytics = () => {
             <div className={`mt-3 flex items-center gap-2 text-sm ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{classesError}</span>
+            </div>
+          )}
+
+          {feedbackError && (
+            <div className={`mt-3 flex items-center gap-2 text-sm ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{feedbackError}</span>
             </div>
           )}
 

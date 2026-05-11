@@ -12,6 +12,8 @@ const LeaveApproval = () => {
   const [classId, setClassId] = useState('');
   const [classes, setClasses] = useState([]);
   const [classesError, setClassesError] = useState('');
+  const [leavesError, setLeavesError] = useState('');
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     fetchClasses();
@@ -40,11 +42,15 @@ const LeaveApproval = () => {
 
   const fetchLeaveRequests = async () => {
     setLoading(true);
+    setLeavesError('');
     try {
       const response = await api.get(`/leave/class/${classId}`);
       setLeaves(response.data.data || []);
     } catch (error) {
       console.error('Error fetching leaves:', error);
+      const msg = error.response?.data?.message || 'Failed to load leave requests';
+      setLeavesError(msg);
+      setLeaves([]);
     } finally {
       setLoading(false);
     }
@@ -52,23 +58,27 @@ const LeaveApproval = () => {
 
   const handleApprove = async () => {
     try {
+      setActionError('');
       await api.put(`/leave/approve/${selectedLeave._id}`, { approvalNotes });
       setSelectedLeave(null);
       setApprovalNotes('');
       await fetchLeaveRequests();
     } catch (error) {
       console.error('Error approving leave:', error);
+      setActionError(error.response?.data?.message || 'Failed to approve leave request');
     }
   };
 
   const handleReject = async () => {
     try {
+      setActionError('');
       await api.put(`/leave/reject/${selectedLeave._id}`, { approvalNotes });
       setSelectedLeave(null);
       setApprovalNotes('');
       await fetchLeaveRequests();
     } catch (error) {
       console.error('Error rejecting leave:', error);
+      setActionError(error.response?.data?.message || 'Failed to reject leave request');
     }
   };
 
@@ -188,6 +198,12 @@ const LeaveApproval = () => {
             <FileText className={`w-6 h-6 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
             Pending Leave Requests
           </h2>
+          {leavesError && (
+            <div className={`mb-6 p-4 border rounded-lg flex items-start gap-3 ${darkMode ? 'bg-red-900/30 border-red-700 text-red-300' : 'bg-red-100 border-red-400 text-red-700'}`}>
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <span>{leavesError}</span>
+            </div>
+          )}
           {!classId ? (
             <div className="text-center py-12">
               <Calendar className={`w-12 h-12 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-300'}`} />
@@ -261,6 +277,13 @@ const LeaveApproval = () => {
                 Leave Review
               </h2>
 
+              {actionError && (
+                <div className={`mb-6 p-4 border rounded-lg flex items-start gap-3 ${darkMode ? 'bg-red-900/30 border-red-700 text-red-300' : 'bg-red-100 border-red-400 text-red-700'}`}>
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <span>{actionError}</span>
+                </div>
+              )}
+
               <div className={`rounded-lg p-5 mb-6 space-y-3 ${darkMode ? 'bg-slate-700/50' : 'bg-gradient-to-r from-gray-50 to-gray-100'}`}>
                 <div>
                   <p className={`text-xs font-semibold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Student</p>
@@ -321,7 +344,7 @@ const LeaveApproval = () => {
                   <XCircle className="w-5 h-5" /> Reject
                 </button>
                 <button
-                  onClick={() => { setSelectedLeave(null); setApprovalNotes(''); }}
+                  onClick={() => { setSelectedLeave(null); setApprovalNotes(''); setActionError(''); }}
                   className={`flex-1 px-4 py-3 rounded-lg transition font-bold ${darkMode
                     ? 'bg-slate-600 hover:bg-slate-500 text-gray-200'
                     : 'bg-gray-300 hover:bg-gray-400 text-gray-800'}`}

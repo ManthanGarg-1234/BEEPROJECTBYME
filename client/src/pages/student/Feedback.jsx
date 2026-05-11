@@ -34,7 +34,7 @@ const FeedbackForm = () => {
       setClasses(classesData);
       
       // Extract unique groups
-      const groups = [...new Set(classesData.map(c => c.classId.split('-')[0]))].sort();
+      const groups = [...new Set(classesData.map(c => c.classId?.split('-')[0] || ''))].filter(Boolean).sort();
       if (groups.length > 0) {
         setSelectedGroup(groups[0]);
       }
@@ -89,12 +89,12 @@ const FeedbackForm = () => {
   };
 
   const getGroupsFromClasses = () => {
-    return [...new Set(classes.map(c => c.classId.split('-')[0]))].sort();
+    return [...new Set(classes.map(c => c.classId?.split('-')[0] || ''))].filter(Boolean).sort();
   };
 
   const getFilteredClasses = () => {
     if (!selectedGroup) return classes;
-    return classes.filter(c => c.classId.startsWith(selectedGroup));
+    return classes.filter(c => c.classId?.startsWith(selectedGroup));
   };
 
   const renderStars = (rating) => {
