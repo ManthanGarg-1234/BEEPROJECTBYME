@@ -3,6 +3,7 @@ import { useNavigate, NavLink } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import api from '../../api';
 import { useSocket } from '../../context/SocketContext';
+import { useAuth } from '../../context/AuthContext';
 
 const TeacherDashboard = () => {
     const [classes, setClasses] = useState([]);
@@ -10,17 +11,26 @@ const TeacherDashboard = () => {
     const [stats, setStats] = useState(null);
     const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [sendingEmail, setSendingEmail] = useState({});  // { studentId: true/false }
+    const [sendingEmail, setSendingEmail] = useState({});
     const [bulkSending, setBulkSending] = useState(false);
-    const [toast, setToast] = useState(null); // { type: 'success'|'error', msg }
+    const [toast, setToast] = useState(null);
     const navigate = useNavigate();
     const socket = useSocket();
+    const { user, logout } = useAuth();
+
+    const handleLogout = () => { logout(); navigate('/login'); };
 
     const quickNav = [
         { label: 'Dashboard', path: '/teacher/dashboard', icon: '📊' },
         { label: 'Classes', path: '/teacher/classes', icon: '📚' },
         { label: 'Session', path: '/teacher/session', icon: '🎯' },
-        { label: 'Manual', path: '/teacher/manual-attendance', icon: '✏️' },
+        { label: 'Manual Attendance', path: '/teacher/manual-attendance', icon: '✏️' },
+        { label: 'Marks', path: '/teacher/marks', icon: '📋' },
+        { label: 'Email Notify', path: '/teacher/email', icon: '✉️' },
+        { label: 'Leave Approval', path: '/teacher/leave-approval', icon: '📅' },
+        { label: 'Feedback', path: '/teacher/feedback', icon: '⭐' },
+        { label: 'Suspicious', path: '/teacher/suspicious-activities', icon: '🚨' },
+        { label: 'Analytics', path: '/teacher/advanced-analytics', icon: '📊' },
         { label: 'Reports', path: '/teacher/reports', icon: '📈' },
     ];
 
@@ -142,39 +152,54 @@ const TeacherDashboard = () => {
         return (
             <div className="page-container">
                 <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-                    <aside className="glass-card-solid p-5 h-fit lg:sticky lg:top-24">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-r from-cyan-500 to-lime-400 flex items-center justify-center text-white text-lg shadow-lg shadow-cyan-500/30">
-                                🧭
+                    <aside className="glass-card-solid p-4 h-fit lg:sticky lg:top-24 flex flex-col gap-4">
+                        {/* Profile Card */}
+                        <div className="rounded-2xl bg-gradient-to-r from-cyan-500/20 to-lime-400/10 border border-cyan-500/30 p-4 flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-lime-400 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-cyan-500/30 shrink-0">
+                                {user?.name?.charAt(0)?.toUpperCase() || 'T'}
                             </div>
-                            <div>
-                                <p className="text-xs uppercase tracking-[0.25em] text-cyan-200/80">Control Hub</p>
-                                <h2 className="text-lg font-bold text-white">Teacher Sidebar</h2>
+                            <div className="min-w-0">
+                                <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/80">Teacher</p>
+                                <p className="text-sm font-bold text-white truncate">{user?.name || 'Teacher'}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{user?.email || ''}</p>
                             </div>
                         </div>
 
-                        <div className="space-y-3 mb-6">
-                            {quickNav.map((item) => (
-                                <NavLink
-                                    key={item.path}
-                                    to={item.path}
-                                    className={({ isActive }) => `w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all duration-300 ${isActive
-                                            ? 'border-cyan-300/70 bg-cyan-500/10 text-white'
-                                            : 'bg-slate-900/60 border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white'
-                                        }`}
-                                >
-                                    <span className="flex items-center gap-2 text-sm font-medium">
-                                        <span className="text-lg">{item.icon}</span>
-                                        {item.label}
-                                    </span>
-                                    <span className="text-xs text-slate-400">→</span>
-                                </NavLink>
-                            ))}
+                        {/* Nav Links */}
+                        <div>
+                            <p className="text-[10px] uppercase tracking-widest text-slate-500 px-1 mb-2">Navigation</p>
+                            <div className="space-y-1">
+                                {quickNav.map((item) => (
+                                    <NavLink
+                                        key={item.path}
+                                        to={item.path}
+                                        className={({ isActive }) => `w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${isActive
+                                                ? 'border-cyan-400/60 bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 font-semibold'
+                                                : 'bg-slate-900/40 border-slate-700/40 text-slate-300 hover:border-cyan-400/40 hover:text-white hover:bg-slate-800/60'
+                                            }`}
+                                    >
+                                        <span className="flex items-center gap-2 text-sm">
+                                            <span className="text-base">{item.icon}</span>
+                                            {item.label}
+                                        </span>
+                                        <svg className="w-3 h-3 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                    </NavLink>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-4 text-sm text-slate-300">
+                        <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-3 text-xs text-slate-400">
                             Add your first class to unlock analytics, sessions, and reports.
                         </div>
+
+                        {/* Logout */}
+                        <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-white font-semibold text-sm shadow-md shadow-rose-500/20 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                            Logout
+                        </button>
                     </aside>
 
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1">
@@ -264,34 +289,40 @@ const TeacherDashboard = () => {
     return (
         <div className="page-container">
             <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-                <aside className="glass-card-solid p-5 h-fit lg:sticky lg:top-24">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-r from-cyan-500 to-lime-400 flex items-center justify-center text-white text-lg shadow-lg shadow-cyan-500/30">
-                            🧭
+                <aside className="glass-card-solid p-4 h-fit lg:sticky lg:top-24 flex flex-col gap-4">
+                    {/* Profile Card */}
+                    <div className="rounded-2xl bg-gradient-to-r from-cyan-500/20 to-lime-400/10 border border-cyan-500/30 p-4 flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-lime-400 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-cyan-500/30 shrink-0">
+                            {user?.name?.charAt(0)?.toUpperCase() || 'T'}
                         </div>
-                        <div>
-                            <p className="text-xs uppercase tracking-[0.25em] text-cyan-200/80">Control Hub</p>
-                            <h2 className="text-lg font-bold text-white">Teacher Sidebar</h2>
+                        <div className="min-w-0">
+                            <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/80">Teacher</p>
+                            <p className="text-sm font-bold text-white truncate">{user?.name || 'Teacher'}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{user?.email || ''}</p>
                         </div>
                     </div>
 
-                    <div className="space-y-3 mb-6">
-                        {quickNav.map((item) => (
-                            <NavLink
-                                key={item.path}
-                                to={item.path}
-                                className={({ isActive }) => `w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all duration-300 ${isActive
-                                        ? 'border-cyan-300/70 bg-cyan-500/10 text-white'
-                                        : 'bg-slate-900/60 border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white'
-                                    }`}
-                            >
-                                <span className="flex items-center gap-2 text-sm font-medium">
-                                    <span className="text-lg">{item.icon}</span>
-                                    {item.label}
-                                </span>
-                                <span className="text-xs text-slate-400">→</span>
-                            </NavLink>
-                        ))}
+                    {/* Nav Links */}
+                    <div>
+                        <p className="text-[10px] uppercase tracking-widest text-slate-500 px-1 mb-2">Navigation</p>
+                        <div className="space-y-1">
+                            {quickNav.map((item) => (
+                                <NavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    className={({ isActive }) => `w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${isActive
+                                            ? 'border-cyan-400/60 bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 font-semibold'
+                                            : 'bg-slate-900/40 border-slate-700/40 text-slate-300 hover:border-cyan-400/40 hover:text-white hover:bg-slate-800/60'
+                                        }`}
+                                >
+                                    <span className="flex items-center gap-2 text-sm">
+                                        <span className="text-base">{item.icon}</span>
+                                        {item.label}
+                                    </span>
+                                    <svg className="w-3 h-3 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                </NavLink>
+                            ))}
+                        </div>
                     </div>
 
                     <div className="mb-6">

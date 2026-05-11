@@ -14,13 +14,17 @@ const StudentDashboard = () => {
     const [marksData, setMarksData] = useState(null);
     const [marksLoading, setMarksLoading] = useState(false);
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const socket = useSocket();
+
+    const handleLogout = () => { logout(); navigate('/login'); };
 
     const quickNav = [
         { label: 'Dashboard', path: '/student/dashboard', icon: '📊' },
         { label: 'Subjects', path: '/student/subjects', icon: '📚' },
         { label: 'Scan QR', path: '/student/scan', icon: '📷' },
+        { label: 'Leave Request', path: '/student/leave', icon: '📅' },
+        { label: 'Feedback', path: '/student/feedback', icon: '⭐' },
         { label: 'Reports', path: '/student/reports', icon: '📈' },
     ];
 
@@ -92,39 +96,57 @@ const StudentDashboard = () => {
         return (
             <div className="page-container">
                 <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-                    <aside className="glass-card-solid p-5 h-fit lg:sticky lg:top-24">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center text-white text-lg shadow-lg shadow-cyan-500/30">
-                                🎓
+                    <aside className="glass-card-solid p-4 h-fit lg:sticky lg:top-24 flex flex-col gap-4">
+                        {/* Profile Card */}
+                        <div className="rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-500/10 border border-cyan-500/30 p-4 flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-cyan-500/30 shrink-0 overflow-hidden">
+                                {photoUrl
+                                    ? <img src={photoUrl} alt={user?.name} className="w-full h-full object-cover" />
+                                    : user?.name?.charAt(0)?.toUpperCase() || 'S'
+                                }
                             </div>
-                            <div>
-                                <p className="text-xs uppercase tracking-[0.25em] text-cyan-200/80">Student Hub</p>
-                                <h2 className="text-lg font-bold text-white">My Dashboard</h2>
+                            <div className="min-w-0">
+                                <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/80">Student</p>
+                                <p className="text-sm font-bold text-white truncate">{user?.name || 'Student'}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{user?.rollNumber || user?.email || ''}</p>
                             </div>
                         </div>
 
-                        <div className="space-y-3 mb-6">
-                            {quickNav.map((item) => (
-                                <NavLink
-                                    key={item.path}
-                                    to={item.path}
-                                    className={({ isActive }) => `w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all duration-300 ${isActive
-                                            ? 'border-cyan-300/70 bg-cyan-500/10 text-white'
-                                            : 'bg-slate-900/60 border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white'
-                                        }`}
-                                >
-                                    <span className="flex items-center gap-2 text-sm font-medium">
-                                        <span className="text-lg">{item.icon}</span>
-                                        {item.label}
-                                    </span>
-                                    <span className="text-xs text-slate-400">→</span>
-                                </NavLink>
-                            ))}
+                        {/* Nav Links */}
+                        <div>
+                            <p className="text-[10px] uppercase tracking-widest text-slate-500 px-1 mb-2">Navigation</p>
+                            <div className="space-y-1">
+                                {quickNav.map((item) => (
+                                    <NavLink
+                                        key={item.path}
+                                        to={item.path}
+                                        className={({ isActive }) => `w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${isActive
+                                                ? 'border-cyan-400/60 bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 font-semibold'
+                                                : 'bg-slate-900/40 border-slate-700/40 text-slate-300 hover:border-cyan-400/40 hover:text-white hover:bg-slate-800/60'
+                                            }`}
+                                    >
+                                        <span className="flex items-center gap-2 text-sm">
+                                            <span className="text-base">{item.icon}</span>
+                                            {item.label}
+                                        </span>
+                                        <svg className="w-3 h-3 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                    </NavLink>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-4 text-sm text-slate-300">
+                        <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-3 text-xs text-slate-400">
                             Join a class to unlock your attendance, marks, and session actions.
                         </div>
+
+                        {/* Logout */}
+                        <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-white font-semibold text-sm shadow-md shadow-rose-500/20 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                            Logout
+                        </button>
                     </aside>
 
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-500 p-[1px]">
@@ -175,75 +197,88 @@ const StudentDashboard = () => {
     return (
         <div className="page-container">
             <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-                <aside className="glass-card-solid p-5 h-fit lg:sticky lg:top-24">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center text-white text-lg shadow-lg shadow-cyan-500/30">
-                            🎓
+                <aside className="glass-card-solid p-4 h-fit lg:sticky lg:top-24 flex flex-col gap-4">
+                    {/* Profile Card */}
+                    <div className="rounded-2xl bg-gradient-to-r from-cyan-500/20 to-blue-500/10 border border-cyan-500/30 p-4 flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-cyan-500/30 shrink-0 overflow-hidden">
+                            {photoUrl
+                                ? <img src={photoUrl} alt={user?.name} className="w-full h-full object-cover" />
+                                : user?.name?.charAt(0)?.toUpperCase() || 'S'
+                            }
                         </div>
-                        <div>
-                            <p className="text-xs uppercase tracking-[0.25em] text-cyan-200/80">Student Hub</p>
-                            <h2 className="text-lg font-bold text-white">My Dashboard</h2>
+                        <div className="min-w-0">
+                            <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/80">Student</p>
+                            <p className="text-sm font-bold text-white truncate">{user?.name || 'Student'}</p>
+                            <p className="text-[10px] text-slate-400 truncate">{user?.rollNumber || user?.email || ''}</p>
                         </div>
                     </div>
 
-                    <div className="space-y-3 mb-6">
-                        {quickNav.map((item) => (
-                            <NavLink
-                                key={item.path}
-                                to={item.path}
-                                className={({ isActive }) => `w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all duration-300 ${isActive
-                                        ? 'border-cyan-300/70 bg-cyan-500/10 text-white'
-                                        : 'bg-slate-900/60 border-slate-700/50 text-slate-200 hover:border-cyan-300/60 hover:text-white'
-                                    }`}
-                            >
-                                <span className="flex items-center gap-2 text-sm font-medium">
-                                    <span className="text-lg">{item.icon}</span>
-                                    {item.label}
-                                </span>
-                                <span className="text-xs text-slate-400">→</span>
-                            </NavLink>
-                        ))}
-                    </div>
-
-                    <h3 className="text-sm font-semibold text-slate-200 mb-3">My Subjects</h3>
-                    <div className="space-y-2 mb-6">
-                        {data.classes.map((cls) => (
-                            <button
-                                key={cls.classId}
-                                type="button"
-                                onClick={() => setSelectedClassId(cls.classId)}
-                                className={`w-full text-left rounded-xl border px-3 py-2.5 transition-all duration-300 ${selectedClassId === cls.classId
-                                    ? 'border-cyan-300/70 bg-cyan-500/10 text-white'
-                                    : 'border-slate-700/60 bg-slate-900/60 text-slate-200 hover:border-cyan-300/60'
-                                    }`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <p className="text-sm font-semibold">{cls.subject}</p>
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-200 border border-slate-700/60">
-                                        {cls.classId}
+                    {/* Nav Links */}
+                    <div>
+                        <p className="text-[10px] uppercase tracking-widest text-slate-500 px-1 mb-2">Navigation</p>
+                        <div className="space-y-1">
+                            {quickNav.map((item) => (
+                                <NavLink
+                                    key={item.path}
+                                    to={item.path}
+                                    className={({ isActive }) => `w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border transition-all duration-200 ${isActive
+                                            ? 'border-cyan-400/60 bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 font-semibold'
+                                            : 'bg-slate-900/40 border-slate-700/40 text-slate-300 hover:border-cyan-400/40 hover:text-white hover:bg-slate-800/60'
+                                        }`}
+                                >
+                                    <span className="flex items-center gap-2 text-sm">
+                                        <span className="text-base">{item.icon}</span>
+                                        {item.label}
                                     </span>
-                                </div>
-                                <p className="text-xs text-slate-400 mt-1">{cls.teacher}</p>
-                            </button>
-                        ))}
+                                    <svg className="w-3 h-3 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                </NavLink>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="mb-6">
-                        <h3 className="text-sm font-semibold text-slate-200 mb-3">Quick Actions</h3>
-                        <div className="grid gap-2">
+                    {/* My Subjects */}
+                    <div>
+                        <p className="text-[10px] uppercase tracking-widest text-slate-500 px-1 mb-2">My Subjects</p>
+                        <div className="space-y-1 mb-4">
+                            {data.classes.map((cls) => (
+                                <button
+                                    key={cls.classId}
+                                    type="button"
+                                    onClick={() => setSelectedClassId(cls.classId)}
+                                    className={`w-full text-left rounded-xl border px-3 py-2 transition-all duration-200 ${selectedClassId === cls.classId
+                                        ? 'border-cyan-400/60 bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 font-semibold'
+                                        : 'border-slate-700/40 bg-slate-900/40 text-slate-300 hover:border-cyan-400/40 hover:bg-slate-800/60'
+                                        }`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm font-semibold truncate">{cls.subject}</p>
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60 shrink-0 ml-1">
+                                            {cls.classId}
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-400 mt-0.5 truncate">{cls.teacher}</p>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div>
+                        <p className="text-[10px] uppercase tracking-widest text-slate-500 px-1 mb-2">Quick Actions</p>
+                        <div className="grid gap-1.5">
                             <button
                                 type="button"
-                                onClick={() => navigate(`/student/reports?classId=${selectedClass.classId}`)}
-                                className="w-full rounded-xl border border-slate-700/60 bg-slate-900/60 px-3 py-2.5 text-sm font-semibold text-slate-200 hover:border-cyan-300/60 transition-all duration-300"
+                                onClick={() => navigate(`/student/reports?classId=${selectedClass?.classId}`)}
+                                className="w-full rounded-xl border border-slate-700/40 bg-slate-900/40 px-3 py-2 text-sm font-semibold text-slate-200 hover:border-cyan-400/40 hover:bg-slate-800/60 transition-all duration-200"
                             >
-                                View Attendance Report
+                                📈 Attendance Report
                             </button>
                             <button
                                 type="button"
                                 onClick={() => navigate('/student/scan')}
-                                className="w-full btn-primary py-2.5"
+                                className="w-full btn-primary py-2"
                             >
-                                Mark Attendance
+                                📷 Mark Attendance
                             </button>
                         </div>
                     </div>
@@ -300,6 +335,15 @@ const StudentDashboard = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* Logout */}
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-white font-semibold text-sm shadow-md shadow-rose-500/20 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        Logout
+                    </button>
                 </aside>
 
                 <div>
