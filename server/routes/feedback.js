@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const Feedback = require('../models/Feedback');
 const AuditLog = require('../models/AuditLog');
 
