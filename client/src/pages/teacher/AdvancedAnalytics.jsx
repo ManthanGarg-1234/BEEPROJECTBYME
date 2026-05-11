@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api';
+import { useTheme } from '../../context/ThemeContext';
 import {
   LineChart,
   Line,
@@ -17,11 +18,13 @@ import {
   Area,
   AreaChart,
 } from 'recharts';
-import { TrendingUp, Calendar, Users, AlertCircle, Loader, CheckCircle, Target } from 'lucide-react';
+import { TrendingUp, Users, AlertCircle, Loader, CheckCircle, Target } from 'lucide-react';
 
 const AdvancedAnalytics = () => {
+  const { darkMode } = useTheme();
   const [classId, setClassId] = useState('');
   const [classes, setClasses] = useState([]);
+  const [classesError, setClassesError] = useState('');
   const [timeRange, setTimeRange] = useState('week');
   const [loading, setLoading] = useState(false);
   const [attendanceData, setAttendanceData] = useState([]);
@@ -43,11 +46,21 @@ const AdvancedAnalytics = () => {
 
   const fetchClasses = async () => {
     try {
+      setClassesError('');
       const response = await api.get('/classes/my-classes');
-      setClasses(response.data.data || []);
+      const data = response.data.data || [];
+      setClasses(data);
+      if (data.length === 0) setClassesError('No groups found. Please ensure the database is seeded.');
     } catch (error) {
       console.error('Error fetching classes:', error);
+      setClassesError('Failed to load groups. Please check your connection.');
     }
+  };
+
+  // Format: "G18-BE" → "Group G18 · Backend Engineering"
+  const formatClassLabel = (c) => {
+    const group = c.classId?.split('-')?.[0] || '';
+    return `Group ${group} · ${c.subject}`;
   };
 
   const fetchAnalytics = async () => {
@@ -109,40 +122,49 @@ const AdvancedAnalytics = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 md:p-8">
+    <div className={`min-h-screen ${darkMode ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-blue-50 via-white to-indigo-50'} p-4 md:p-8 transition-colors duration-300`}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2 flex items-center gap-3">
-            <TrendingUp className="w-8 h-8 md:w-10 md:h-10 text-indigo-600" /> Advanced Analytics
+          <h1 className={`text-4xl md:text-5xl font-bold mb-2 flex items-center gap-3 ${darkMode ? 'bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent' : 'bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent'}`}>
+            <TrendingUp className={`w-8 h-8 md:w-10 md:h-10 ${darkMode ? 'text-cyan-400' : 'text-indigo-600'}`} /> Advanced Analytics
           </h1>
-          <p className="text-gray-600 text-lg">Deep insights into attendance and performance</p>
+          <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Deep insights into attendance and performance</p>
         </div>
 
         {/* Controls */}
-        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 mb-8 border-t-4 border-blue-500">
+        <div className={`rounded-xl shadow-lg p-6 md:p-8 mb-8 border-t-4 ${darkMode ? 'bg-slate-800 border-cyan-500' : 'bg-white border-blue-500'}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Select Class</label>
+              <label className={`block text-sm font-semibold mb-3 uppercase tracking-wide ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Select Group / Class</label>
               <select
                 value={classId}
                 onChange={(e) => setClassId(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
+                className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 outline-none transition ${darkMode ? 'bg-slate-700 border-slate-600 text-gray-100 focus:border-cyan-500 focus:ring-cyan-500/20' : 'bg-white border-gray-300 text-gray-800 focus:border-indigo-500 focus:ring-indigo-200'}`}
               >
-                <option value="">Choose a class</option>
+                <option value="">Choose a group / class</option>
                 {classes.map((c) => (
                   <option key={c._id} value={c._id}>
-                    {c.classId} - {c.subject}
+                    {formatClassLabel(c)}
                   </option>
                 ))}
               </select>
+              {classesError && (
+                <div className={`mt-2 flex items-center gap-2 text-sm ${darkMode ? 'text-amber-400' : 'text-amber-600'}`}>
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{classesError}</span>
+                </div>
+              )}
+              {classes.length > 0 && (
+                <p className={`mt-1 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{classes.length} group{classes.length !== 1 ? 's' : ''} available</p>
+              )}
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Time Range</label>
+              <label className={`block text-sm font-semibold mb-3 uppercase tracking-wide ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Time Range</label>
               <select
                 value={timeRange}
                 onChange={(e) => setTimeRange(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition"
+                className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 outline-none transition ${darkMode ? 'bg-slate-700 border-slate-600 text-gray-100 focus:border-cyan-500 focus:ring-cyan-500/20' : 'bg-white border-gray-300 text-gray-800 focus:border-indigo-500 focus:ring-indigo-200'}`}
               >
                 <option value="week">Last 7 Days</option>
                 <option value="month">Last 30 Days</option>
@@ -156,48 +178,34 @@ const AdvancedAnalytics = () => {
           <>
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl shadow-lg p-6 border border-indigo-200">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-gray-700 text-sm font-semibold uppercase">Total Students</p>
-                  <Users className="w-6 h-6 text-indigo-600" />
+              {[
+                { label: 'Total Students', value: stats.totalStudents, Icon: Users, light: 'from-indigo-50 to-indigo-100 border-indigo-200 text-indigo-600', dark: 'from-indigo-900/40 to-indigo-800/40 border-indigo-700 text-indigo-400' },
+                { label: 'Avg Attendance', value: `${stats.avgAttendance}%`, Icon: CheckCircle, light: 'from-green-50 to-green-100 border-green-200 text-green-600', dark: 'from-green-900/40 to-green-800/40 border-green-700 text-green-400' },
+                { label: 'Engaged', value: stats.highAttendance, Icon: Target, light: 'from-blue-50 to-blue-100 border-blue-200 text-blue-600', dark: 'from-blue-900/40 to-blue-800/40 border-blue-700 text-blue-400' },
+                { label: 'At Risk', value: stats.lowAttendance, Icon: AlertCircle, light: 'from-red-50 to-red-100 border-red-200 text-red-600', dark: 'from-red-900/40 to-red-800/40 border-red-700 text-red-400' },
+              ].map(({ label, value, Icon, light, dark }) => (
+                <div key={label} className={`bg-gradient-to-br rounded-xl shadow-lg p-6 border ${darkMode ? dark : light}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className={`text-sm font-semibold uppercase ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{label}</p>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <p className="text-4xl font-bold">{value}</p>
                 </div>
-                <p className="text-4xl font-bold text-indigo-600">{stats.totalStudents}</p>
-              </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-lg p-6 border border-green-200">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-gray-700 text-sm font-semibold uppercase">Avg Attendance</p>
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <p className="text-4xl font-bold text-green-600">{stats.avgAttendance}%</p>
-              </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg p-6 border border-blue-200">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-gray-700 text-sm font-semibold uppercase">Engaged</p>
-                  <Target className="w-6 h-6 text-blue-600" />
-                </div>
-                <p className="text-4xl font-bold text-blue-600">{stats.highAttendance}</p>
-              </div>
-              <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl shadow-lg p-6 border border-red-200">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-gray-700 text-sm font-semibold uppercase">At Risk</p>
-                  <AlertCircle className="w-6 h-6 text-red-600" />
-                </div>
-                <p className="text-4xl font-bold text-red-600">{stats.lowAttendance}</p>
-              </div>
+              ))}
             </div>
 
             {/* Charts */}
             {loading ? (
-              <div className="flex items-center justify-center py-16 bg-white rounded-xl shadow-lg">
-                <Loader className="w-10 h-10 text-indigo-600 animate-spin" />
-                <span className="ml-4 text-gray-600 text-lg">Loading analytics...</span>
+              <div className={`flex items-center justify-center py-16 rounded-xl shadow-lg ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                <Loader className={`w-10 h-10 animate-spin ${darkMode ? 'text-cyan-400' : 'text-indigo-600'}`} />
+                <span className={`ml-4 text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Loading analytics...</span>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 {/* Attendance Trend */}
-                <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-l-4 border-indigo-500">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <TrendingUp className="w-6 h-6 text-indigo-600" /> Attendance Trend
+                <div className={`rounded-xl shadow-lg p-6 md:p-8 border-l-4 ${darkMode ? 'bg-slate-800 border-cyan-500' : 'bg-white border-indigo-500'}`}>
+                  <h2 className={`text-2xl font-bold mb-6 flex items-center gap-2 ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                    <TrendingUp className={`w-6 h-6 ${darkMode ? 'text-cyan-400' : 'text-indigo-600'}`} /> Attendance Trend
                   </h2>
                   {trendData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
@@ -231,14 +239,14 @@ const AdvancedAnalytics = () => {
                     </ResponsiveContainer>
                   ) : (
                     <div className="text-center py-12">
-                      <p className="text-gray-600">No data available for this period</p>
+                      <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>No data available for this period</p>
                     </div>
                   )}
                 </div>
 
                 {/* Attendance Distribution */}
-                <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-l-4 border-indigo-500">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-6">Attendance Distribution</h2>
+                <div className={`rounded-xl shadow-lg p-6 md:p-8 border-l-4 ${darkMode ? 'bg-slate-800 border-cyan-500' : 'bg-white border-indigo-500'}`}>
+                  <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>Attendance Distribution</h2>
                   {attendanceData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
@@ -267,7 +275,7 @@ const AdvancedAnalytics = () => {
                     </ResponsiveContainer>
                   ) : (
                     <div className="text-center py-12">
-                      <p className="text-gray-600">No data available</p>
+                      <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>No data available</p>
                     </div>
                   )}
                 </div>
@@ -275,55 +283,40 @@ const AdvancedAnalytics = () => {
             )}
 
             {/* Performance Insights */}
-            <div className="bg-white rounded-xl shadow-lg p-6 md:p-8 border-l-4 border-indigo-500">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Performance Insights & Recommendations</h2>
+            <div className={`rounded-xl shadow-lg p-6 md:p-8 border-l-4 ${darkMode ? 'bg-slate-800 border-cyan-500' : 'bg-white border-indigo-500'}`}>
+              <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>Performance Insights & Recommendations</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-6 border border-indigo-200">
-                  <h3 className="font-bold text-gray-800 mb-4 text-lg flex items-center gap-2">
-                    <Target className="w-5 h-5 text-indigo-600" />
+                <div className={`rounded-lg p-6 border ${darkMode ? 'bg-gradient-to-br from-indigo-900/40 to-indigo-800/40 border-indigo-700' : 'bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200'}`}>
+                  <h3 className={`font-bold mb-4 text-lg flex items-center gap-2 ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                    <Target className={`w-5 h-5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
                     Key Recommendations
                   </h3>
                   <ul className="space-y-3">
-                    <li className="flex items-start gap-3">
-                      <span className="text-indigo-600 font-bold text-xl mt-0.5">→</span>
-                      <span className="text-gray-700">Focus on low-attendance students to improve overall metrics and class performance</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-indigo-600 font-bold text-xl mt-0.5">→</span>
-                      <span className="text-gray-700">Review and approve leave requests strategically for better retention</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-indigo-600 font-bold text-xl mt-0.5">→</span>
-                      <span className="text-gray-700">Monitor suspicious activities to maintain system integrity and fairness</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-indigo-600 font-bold text-xl mt-0.5">→</span>
-                      <span className="text-gray-700">Review feedback regularly to identify and improve weak areas in your teaching</span>
-                    </li>
+                    {['Focus on low-attendance students to improve overall metrics and class performance','Review and approve leave requests strategically for better retention','Monitor suspicious activities to maintain system integrity and fairness','Review feedback regularly to identify and improve weak areas in your teaching'].map((tip, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className={`font-bold text-xl mt-0.5 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>→</span>
+                        <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{tip}</span>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
                 <div className="space-y-3">
-                  <h3 className="font-bold text-gray-800 mb-4 text-lg flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  <h3 className={`font-bold mb-4 text-lg flex items-center gap-2 ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
+                    <CheckCircle className="w-5 h-5 text-green-500" />
                     Quick Statistics
                   </h3>
-                  <div className="flex items-center justify-between p-4 bg-indigo-50 rounded-lg border border-indigo-200 hover:shadow-md transition">
-                    <span className="text-gray-700 font-semibold">Attendance Rate</span>
-                    <span className="font-bold text-indigo-600 text-lg">{stats.avgAttendance}%</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200 hover:shadow-md transition">
-                    <span className="text-gray-700 font-semibold">Students Engaged</span>
-                    <span className="font-bold text-green-600 text-lg">{stats.highAttendance}/{stats.totalStudents}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200 hover:shadow-md transition">
-                    <span className="text-gray-700 font-semibold">Need Intervention</span>
-                    <span className="font-bold text-red-600 text-lg">{stats.lowAttendance}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200 hover:shadow-md transition">
-                    <span className="text-gray-700 font-semibold">Time Range</span>
-                    <span className="font-bold text-orange-600 text-lg">{getDaysInRange()} days</span>
-                  </div>
+                  {[
+                    { label: 'Attendance Rate', value: `${stats.avgAttendance}%`, cls: darkMode ? 'bg-indigo-900/30 border-indigo-700 text-indigo-400' : 'bg-indigo-50 border-indigo-200 text-indigo-600' },
+                    { label: 'Students Engaged', value: `${stats.highAttendance}/${stats.totalStudents}`, cls: darkMode ? 'bg-green-900/30 border-green-700 text-green-400' : 'bg-green-50 border-green-200 text-green-600' },
+                    { label: 'Need Intervention', value: stats.lowAttendance, cls: darkMode ? 'bg-red-900/30 border-red-700 text-red-400' : 'bg-red-50 border-red-200 text-red-600' },
+                    { label: 'Time Range', value: `${getDaysInRange()} days`, cls: darkMode ? 'bg-orange-900/30 border-orange-700 text-orange-400' : 'bg-orange-50 border-orange-200 text-orange-600' },
+                  ].map(({ label, value, cls }) => (
+                    <div key={label} className={`flex items-center justify-between p-4 rounded-lg border hover:shadow-md transition ${cls}`}>
+                      <span className={`font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{label}</span>
+                      <span className="font-bold text-lg">{value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
