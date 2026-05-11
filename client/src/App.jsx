@@ -25,6 +25,13 @@ const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
 const StudentAttendanceReport = lazy(() => import('./pages/student/AttendanceReport'));
 const Subjects = lazy(() => import('./pages/student/Subjects'));
 const ScanQR = lazy(() => import('./pages/student/ScanQR'));
+const LeaveRequest = lazy(() => import('./pages/student/LeaveRequest'));
+const Feedback = lazy(() => import('./pages/student/Feedback'));
+const LeaveApproval = lazy(() => import('./pages/teacher/LeaveApproval'));
+const FeedbackAnalytics = lazy(() => import('./pages/teacher/FeedbackAnalytics'));
+const SuspiciousActivityMonitor = lazy(() => import('./pages/teacher/SuspiciousActivityMonitor'));
+const AuditLogViewer = lazy(() => import('./pages/teacher/AuditLogViewer'));
+const AdvancedAnalytics = lazy(() => import('./pages/teacher/AdvancedAnalytics'));
 
 function App() {
     const { loading, isAuthenticated, user } = useAuth();
@@ -111,6 +118,21 @@ function App() {
                         <Route path="/teacher/email" element={
                             <ProtectedRoute role="teacher"><EmailNotifications /></ProtectedRoute>
                         } />
+                        <Route path="/teacher/leave-approval" element={
+                            <ProtectedRoute role="teacher"><LeaveApproval /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/feedback" element={
+                            <ProtectedRoute role="teacher"><FeedbackAnalytics /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/suspicious-activities" element={
+                            <ProtectedRoute role="teacher"><SuspiciousActivityMonitor /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/audit-log" element={
+                            <ProtectedRoute role="teacher"><AuditLogViewer /></ProtectedRoute>
+                        } />
+                        <Route path="/teacher/advanced-analytics" element={
+                            <ProtectedRoute role="teacher"><AdvancedAnalytics /></ProtectedRoute>
+                        } />
 
                         {/* Student Routes */}
                         <Route path="/student/dashboard" element={
@@ -124,6 +146,12 @@ function App() {
                         } />
                         <Route path="/student/reports" element={
                             <ProtectedRoute role="student"><StudentAttendanceReport /></ProtectedRoute>
+                        } />
+                        <Route path="/student/leave" element={
+                            <ProtectedRoute role="student"><LeaveRequest /></ProtectedRoute>
+                        } />
+                        <Route path="/student/feedback" element={
+                            <ProtectedRoute role="student"><Feedback /></ProtectedRoute>
                         } />
 
                         {/* Teacher URL aliases — short/alternate paths redirect to canonical routes */}

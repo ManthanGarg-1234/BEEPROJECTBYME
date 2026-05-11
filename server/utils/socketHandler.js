@@ -35,6 +35,12 @@ const initSocketHandler = (io) => {
             console.log(`[Socket] User ${socket.userId} joined class:${classId}`);
         });
 
+        // User joins notification room
+        socket.on('join-notifications', () => {
+            socket.join(`user:${socket.userId}`);
+            console.log(`[Socket] User ${socket.userId} joined notification room`);
+        });
+
         // Leave rooms
         socket.on('leave-session', (sessionId) => {
             socket.leave(`session:${sessionId}`);
@@ -80,4 +86,39 @@ const emitProxyAlert = (io, sessionId, data) => {
     io.to(`session:${sessionId}`).emit('proxy-alert', data);
 };
 
-module.exports = { initSocketHandler, emitAttendanceUpdate, emitQRRefresh, emitSessionUpdate, emitProxyAlert };
+/**
+ * Send notification to specific user
+ */
+const emitNotification = (io, userId, notification) => {
+    io.to(`user:${userId}`).emit('notification', notification);
+};
+
+/**
+ * Broadcast announcement to class
+ */
+const emitClassAnnouncement = (io, classId, announcement) => {
+    io.to(`class:${classId}`).emit('class-announcement', announcement);
+};
+
+/**
+ * Notify teacher of leave request
+ */
+const emitLeaveRequest = (io, teacherId, data) => {
+    io.to(`user:${teacherId}`).emit('leave-request-notification', data);
+};
+
+/**
+ * Notify student of leave status change
+ */
+const emitLeaveStatusChange = (io, studentId, data) => {
+    io.to(`user:${studentId}`).emit('leave-status-change', data);
+};
+
+/**
+ * Notify of low attendance alert
+ */
+const emitAttendanceAlert = (io, studentId, message) => {
+    io.to(`user:${studentId}`).emit('attendance-alert', message);
+};
+
+module.exports = { initSocketHandler, emitAttendanceUpdate, emitQRRefresh, emitSessionUpdate, emitProxyAlert, emitNotification, emitClassAnnouncement, emitLeaveRequest, emitLeaveStatusChange, emitAttendanceAlert };

@@ -63,6 +63,10 @@ app.use('/api/attendance', require('./routes/attendance'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/marks', require('./routes/marks'));
 app.use('/api/email', require('./routes/email'));
+app.use('/api/leave', require('./routes/leave'));
+app.use('/api/feedback', require('./routes/feedback'));
+app.use('/api/audit-log', require('./routes/auditlog'));
+app.use('/api/suspicious', require('./routes/suspicious'));
 
 // Health check
 app.get('/api/health', (req, res) => {

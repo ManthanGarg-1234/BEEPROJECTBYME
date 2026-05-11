@@ -65,6 +65,18 @@ const Navbar = () => {
                                 <NavLink to="/teacher/email" className={linkClass}>
                                     <span className="flex items-center gap-1.5">✉️ Email</span>
                                 </NavLink>
+                                <NavLink to="/teacher/leave-approval" className={linkClass}>
+                                    <span className="flex items-center gap-1.5">📅 Leaves</span>
+                                </NavLink>
+                                <NavLink to="/teacher/feedback" className={linkClass}>
+                                    <span className="flex items-center gap-1.5">⭐ Feedback</span>
+                                </NavLink>
+                                <NavLink to="/teacher/suspicious-activities" className={linkClass}>
+                                    <span className="flex items-center gap-1.5">🚨 Suspicious</span>
+                                </NavLink>
+                                <NavLink to="/teacher/advanced-analytics" className={linkClass}>
+                                    <span className="flex items-center gap-1.5">📊 Analytics</span>
+                                </NavLink>
                                 <NavLink to="/teacher/reports" className={linkClass}>
                                     <span className="flex items-center gap-1.5">📈 Reports</span>
                                 </NavLink>
@@ -77,6 +89,12 @@ const Navbar = () => {
                                 </NavLink>
                                 <NavLink to="/student/scan" className={linkClass}>
                                     <span className="flex items-center gap-1.5">📷 Mark Attendance</span>
+                                </NavLink>
+                                <NavLink to="/student/leave" className={linkClass}>
+                                    <span className="flex items-center gap-1.5">📅 Leave</span>
+                                </NavLink>
+                                <NavLink to="/student/feedback" className={linkClass}>
+                                    <span className="flex items-center gap-1.5">⭐ Feedback</span>
                                 </NavLink>
                                 <NavLink to="/student/reports" className={linkClass}>
                                     <span className="flex items-center gap-1.5">📈 Reports</span>
@@ -160,6 +178,10 @@ const Navbar = () => {
                                     <NavLink to="/teacher/manual-attendance" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>✏️ Manual</NavLink>
                                     <NavLink to="/teacher/marks" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📋 Marks</NavLink>
                                     <NavLink to="/teacher/email" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>✉️ Email</NavLink>
+                                    <NavLink to="/teacher/leave-approval" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📅 Leaves</NavLink>
+                                    <NavLink to="/teacher/feedback" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>⭐ Feedback</NavLink>
+                                    <NavLink to="/teacher/suspicious-activities" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>🚨 Suspicious</NavLink>
+                                    <NavLink to="/teacher/advanced-analytics" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📊 Analytics</NavLink>
                                     <NavLink to="/teacher/reports" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📈 Reports</NavLink>
                                 </>
                             )}
@@ -167,6 +189,8 @@ const Navbar = () => {
                                 <>
                                     <NavLink to="/student/dashboard" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📊 Dashboard</NavLink>
                                     <NavLink to="/student/scan" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📷 Mark Attendance</NavLink>
+                                    <NavLink to="/student/leave" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📅 Leave</NavLink>
+                                    <NavLink to="/student/feedback" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>⭐ Feedback</NavLink>
                                     <NavLink to="/student/reports" className={mobileLinkClass} onClick={() => setMobileOpen(false)}>📈 Reports</NavLink>
                                 </>
                             )}
